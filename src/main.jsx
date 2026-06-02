@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import "./index.css";
+import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
 
 const tabs = [
   { id: "shift", label: "Смена", icon: Home },
@@ -163,6 +164,45 @@ function App() {
   const [staffOpen, setStaffOpen] = React.useState(false);
   const [quickPanelOpen, setQuickPanelOpen] = React.useState(false);
   const [toast, setToast] = React.useState("");
+  const [session, setSession] = React.useState(null);
+  const [authLoading, setAuthLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!supabase) return undefined;
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleGoogleSignIn() {
+    if (!isSupabaseConfigured) {
+      setToast("Supabase env пока не подключен");
+      return;
+    }
+
+    setAuthLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setToast(`Google login error: ${error.message}`);
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setAuthLoading(true);
+    await signOut();
+    setAuthLoading(false);
+    setToast("Вы вышли из аккаунта");
+  }
 
   function addActivity(action, meta, tone = "amber", actor = "Chef") {
     setActivity((current) => [{ id: Date.now(), actor, action, meta, time: "сейчас", tone }, ...current]);
@@ -194,6 +234,7 @@ function App() {
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} />
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2 lg:px-6">
+          <AuthStatus session={session} loading={authLoading} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
             <ShiftScreen
               tasks={tasks}
@@ -227,6 +268,26 @@ function App() {
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </section>
     </main>
+  );
+}
+
+function AuthStatus({ session, loading, onSignIn, onSignOut }) {
+  const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
+
+  return (
+    <section className="mb-4 flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-white p-3 shadow-sm">
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase tracking-wide text-slate-500">{isSupabaseConfigured ? "Общая база" : "Demo mode"}</p>
+        <p className="truncate text-sm font-black text-slate-950">{session ? userLabel : isSupabaseConfigured ? "Войдите через Google" : "Supabase env не задан"}</p>
+      </div>
+      <button
+        onClick={session ? onSignOut : onSignIn}
+        disabled={loading}
+        className="min-h-12 shrink-0 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300"
+      >
+        {loading ? "..." : session ? "Выйти" : "Google"}
+      </button>
+    </section>
   );
 }
 

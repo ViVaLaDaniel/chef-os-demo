@@ -54,3 +54,20 @@ npm run build
 - Android and iOS apps via Capacitor using the same React codebase.
 - Add camera/gallery flows for inventory photos and issue reports.
 - Use `tel:` for quick staff/supplier calls; add native contact permissions only in the mobile app phase.
+
+## Supabase Setup
+
+The app is prepared for Supabase Auth and a shared database, but production credentials are not committed.
+
+1. Create or choose a Supabase project for Chef OS.
+2. Apply the migration in `supabase/migrations`.
+3. Enable Google as an Auth provider in Supabase Dashboard.
+4. Add the deployed Vercel URL to Supabase Auth redirect URLs.
+5. Set these Vercel environment variables:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+```
+
+The database model is tenant-based: every operational table is connected to `restaurants`, and access is controlled through `restaurant_members` roles and RLS.
