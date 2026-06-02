@@ -46,6 +46,7 @@ vercel deploy --prod --yes
 - `docs/SUPABASE_AUTH.md`
 - `docs/INTERACTION_LOGIC.md`
 - `docs/PROFESSIONAL_KITCHEN_NOTES.md`
+- `docs/QUICK_ACTIONS.md`
 - `docs/RUNBOOK.md`
 - `docs/TASKS.md`
 - `docs/DECISIONS.md`

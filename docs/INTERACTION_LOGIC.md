@@ -113,6 +113,41 @@ When a cook is assigned to a station:
 - Close buttons close their sheet/toast.
 - Google button either starts OAuth or explains that Supabase env is missing.
 
+## Quick Actions Logic
+
+The FAB is not a generic "add" button. In a professional kitchen it answers: "What happened right now?"
+
+Quick actions should be grouped by operational meaning:
+
+- Problem: need sous-chef, delayed ticket, blocker, critical stock.
+- Shift: create urgent station task, open briefing, add handover note.
+- Checklist: open my station checklist, mark process work.
+- Stop-list: signal an item that may need to be stopped.
+- Stock: product low, one unit left, product empty, photo shelf.
+- Team: call/notify sous-chef, pin announcement, urgent message.
+
+Cook behavior:
+
+- The cook sends a short factual signal.
+- The app records station, actor, time, and severity.
+- The cook does not need to write a long explanation during service.
+
+Sous-chef/chef behavior:
+
+- Confirms stop-list and stock signals.
+- Converts signals into tasks, supplier actions, or announcements.
+- Uses activity history to see who reported what and when.
+
+Every quick action should have:
+
+- label;
+- short description;
+- severity color;
+- actor;
+- station/context;
+- activity log event;
+- optional side effect such as creating a task, opening checklist, or creating inventory report.
+
 ## Mobile Layout Rules
 
 - Touch targets are at least 48px.

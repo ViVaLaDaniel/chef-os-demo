@@ -204,6 +204,37 @@ const initialActivity = [
   { id: 3, actor: "Саша", action: "Закрыл задачу по фото эталона", meta: "Холодный цех", time: "10:20", tone: "green" },
 ];
 
+const quickActionCatalog = {
+  shift: [
+    { id: "need-sous", group: "Проблема", label: "Нужен су-шеф", description: "Позвать ответственного к станции", tone: "amber", event: "Позвал су-шефа", meta: currentCook.station },
+    { id: "late-ticket", group: "Проблема", label: "Задержка отдачи", description: "Сообщить pass, что блюдо задерживается", tone: "red", event: "Сообщил задержку отдачи", meta: currentCook.station },
+    { id: "station-task", group: "Смена", label: "Задача на мой цех", description: "Добавить срочную задачу в mise en place", tone: "amber", event: "Создал задачу на цех", meta: currentCook.station },
+    { id: "open-checklist", group: "Чек-лист", label: "Открыть мой чек-лист", description: "Перейти к процессам моей станции", tone: "green", event: "Открыл чек-лист станции", meta: currentCook.station },
+    { id: "stop-item", group: "Стоп", label: "Поставить блюдо в стоп", description: "Сигнал для pass/су-шефа на подтверждение", tone: "red", event: "Создал стоп-сигнал", meta: "Pass" },
+  ],
+  recipes: [
+    { id: "recipe-issue", group: "ТТК", label: "Ошибка в рецепте", description: "Сообщить шефу о неточности", tone: "amber", event: "Сообщил ошибку в ТТК", meta: "ТТК" },
+    { id: "photo-standard", group: "ТТК", label: "Фото эталона", description: "Добавить или запросить фото подачи", tone: "green", event: "Запросил фото эталона", meta: "ТТК" },
+    { id: "missing-ingredient", group: "Проблема", label: "Нет ингредиента", description: "Связать ТТК со складовым сигналом", tone: "red", event: "Сообщил: нет ингредиента для ТТК", meta: currentCook.station },
+  ],
+  inventory: [
+    { id: "empty-stock", group: "Склад", label: "Продукт закончился", description: "Критичный сигнал су-шефу", tone: "red", event: "Складовой сигнал: продукт закончился", meta: currentCook.station },
+    { id: "one-left", group: "Склад", label: "Осталась 1 единица", description: "Предупредить до полного нуля", tone: "amber", event: "Складовой сигнал: осталась 1 единица", meta: currentCook.station },
+    { id: "confirm-order", group: "Закупка", label: "Подтвердить заявку", description: "Су-шеф подтверждает сигнал", tone: "green", event: "Подтвердил складовую заявку", meta: "Склад" },
+    { id: "photo-shelf", group: "Фото", label: "Фото полки", description: "Прикрепить визуальное подтверждение", tone: "amber", event: "Добавил фото складской проблемы", meta: "Склад" },
+  ],
+  stations: [
+    { id: "open-process", group: "Процесс", label: "Открыть процесс", description: "Посмотреть инструкции станции", tone: "green", event: "Открыл процесс станции", meta: currentCook.station },
+    { id: "process-blocker", group: "Проблема", label: "Блокер процесса", description: "Сообщить, что станция не может продолжить", tone: "red", event: "Сообщил блокер процесса", meta: currentCook.station },
+    { id: "handover-note", group: "Закрытие", label: "Заметка на передачу", description: "Оставить handover для следующей смены", tone: "amber", event: "Добавил заметку на передачу", meta: currentCook.station },
+  ],
+  chat: [
+    { id: "call-sous", group: "Команда", label: "Позвать су-шефа", description: "Короткий командный сигнал", tone: "amber", event: "Позвал су-шефа в чат", meta: "Чат" },
+    { id: "pin-announcement", group: "Команда", label: "Закрепить объявление", description: "Важное сообщение для всей кухни", tone: "green", event: "Закрепил объявление", meta: "Чат" },
+    { id: "urgent-alert", group: "Проблема", label: "Срочное сообщение", description: "Выделить сообщение как критичное", tone: "red", event: "Отправил срочное сообщение", meta: "Чат" },
+  ],
+};
+
 const messages = [
   { id: 1, from: "Олег", text: "Рыба приехала. Проверяю температуру.", mine: false, time: "10:18" },
   { id: 2, from: "Chef", text: "Принять только после фото накладной.", mine: true, time: "10:19" },
@@ -285,8 +316,26 @@ function App() {
   }
 
   function handleQuickAction(action) {
-    addActivity(action, screenTitle, action.includes("стоп") || action.includes("закончился") ? "red" : "amber");
-    setToast(`Выполнено: ${action}`);
+    addActivity(action.event, action.meta, action.tone, currentCook.name);
+    if (action.id === "station-task") {
+      setTasks((current) => [
+        ...current,
+        { id: Date.now(), title: "Срочная задача цеха", station: currentCook.station, due: "сейчас", done: false, priority: "critical" },
+      ]);
+    }
+    if (action.id === "open-checklist" || action.id === "open-process") {
+      setSelectedStation(stationGuides.find((station) => station.id === currentCook.stationId));
+    }
+    if (action.id === "empty-stock" || action.id === "one-left" || action.id === "missing-ingredient") {
+      setInventoryReports((current) => [
+        { id: Date.now(), item: action.id === "missing-ingredient" ? "Ингредиент ТТК" : "Не указан", station: currentCook.station, level: action.label, supplier: "Назначит су-шеф", status: "Новая" },
+        ...current,
+      ]);
+    }
+    if (action.id === "stop-item") {
+      setSelectedStop({ id: Date.now(), item: "Новое блюдо", reason: "Требует подтверждения су-шефа", station: currentCook.station });
+    }
+    setToast(action.tone === "red" ? `Критичный сигнал: ${action.label}` : `Выполнено: ${action.label}`);
     setQuickPanelOpen(false);
   }
 
@@ -872,22 +921,37 @@ function StationSheet({ station, checklist, onToggleChecklist, onClose }) {
 }
 
 function QuickPanel({ activeTab, onClose, onAction }) {
-  const actions = {
-    shift: ["Создать задачу", "Обновить стоп-лист", "Открыть брифинг"],
-    recipes: ["Новая ТТК", "Фото эталона", "Расчет фудкоста"],
-    inventory: ["Сигнал: продукт закончился", "Создать заявку поставщику", "Добавить фото"],
-    stations: ["Новый процесс", "Назначить ответственного", "Проверить чек-лист"],
-    chat: ["Закрепить объявление", "Позвать су-шефа", "Отправить фото"],
-  }[activeTab];
+  const actions = quickActionCatalog[activeTab];
+  const groupedActions = actions.reduce((groups, action) => {
+    return {
+      ...groups,
+      [action.group]: [...(groups[action.group] ?? []), action],
+    };
+  }, {});
 
   return (
-    <Sheet onClose={onClose} title="Быстрое действие">
-      <div className="space-y-2">
-        {actions.map((action) => (
-          <button key={action} onClick={() => onAction(action)} className="flex min-h-14 w-full items-center justify-between rounded-2xl bg-slate-50 px-4 text-left text-base font-black text-slate-900">
-            {action}
-            {action.includes("фото") || action.includes("Фото") ? <Camera className="text-amber-500" size={22} /> : <Plus className="text-amber-500" size={22} />}
-          </button>
+    <Sheet onClose={onClose} title="Что случилось?" eyebrow="Быстрое действие">
+      <p className="mb-4 rounded-3xl bg-slate-50 p-3 text-sm font-bold leading-snug text-slate-700">
+        Выбери действие за одно касание. Повар сигналит факт, су-шеф подтверждает решение.
+      </p>
+      <div className="space-y-4">
+        {Object.entries(groupedActions).map(([group, groupActions]) => (
+          <section key={group}>
+            <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">{group}</p>
+            <div className="space-y-2">
+              {groupActions.map((action) => (
+                <button key={action.id} onClick={() => onAction(action)} className="flex min-h-16 w-full items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-left">
+                  <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white ${action.tone === "red" ? "bg-red-500" : action.tone === "green" ? "bg-green-500" : "bg-amber-500"}`}>
+                    {action.id.includes("photo") ? <Camera size={21} /> : action.tone === "red" ? <AlertTriangle size={21} /> : <Plus size={21} />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-black text-slate-950">{action.label}</span>
+                    <span className="block text-sm font-semibold leading-snug text-slate-500">{action.description}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </Sheet>

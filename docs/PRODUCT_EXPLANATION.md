@@ -42,6 +42,8 @@ Chef OS combines:
 - chat;
 - activity history.
 
+The quick action button is designed for service pressure. It does not ask a cook to fill out a form. It asks "What happened?" and lets them signal things like product is empty, one unit is left, the ticket is delayed, a station is blocked, or the sous-chef is needed.
+
 ## Why It Is Different
 
 Many tools focus on one part of the work:
