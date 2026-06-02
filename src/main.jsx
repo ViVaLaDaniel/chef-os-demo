@@ -1,53 +1,105 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
+  AlertTriangle,
   Bell,
-  CalendarDays,
+  Camera,
   Check,
   ChefHat,
   Clock3,
-  Database,
   FileText,
   Flame,
+  History,
   Home,
+  ListChecks,
   MessageCircle,
-  Minus,
+  Package,
   Phone,
   Plus,
   Search,
+  Send,
   ShieldCheck,
   ShoppingBasket,
   Sparkles,
-  Star,
-  X,
   Users,
   Utensils,
-  WalletCards,
+  X,
 } from "lucide-react";
 import "./index.css";
 
 const tabs = [
-  { id: "dashboard", label: "Обзор", icon: Home },
+  { id: "shift", label: "Смена", icon: Home },
   { id: "recipes", label: "ТТК", icon: Utensils },
-  { id: "database", label: "Базы", icon: Database },
-  { id: "schedule", label: "График", icon: CalendarDays },
+  { id: "inventory", label: "Склад", icon: Package },
+  { id: "stations", label: "Цеха", icon: ListChecks },
   { id: "chat", label: "Чат", icon: MessageCircle },
 ];
 
-const stats = [
-  { label: "Фудкост", value: "29.4%", delta: "-1.8%", icon: WalletCards, tone: "amber" },
-  { label: "На смене", value: "12", delta: "3 цеха", icon: Users, tone: "green" },
-  { label: "Ожидают", value: "8", delta: "2 срочно", icon: ShoppingBasket, tone: "red" },
+const staff = [
+  { id: 1, name: "Олег", role: "Су-шеф", station: "Pass", time: "09:00-18:00", status: "На смене", phone: "+48123123123", avatar: "О" },
+  { id: 2, name: "Ирина", role: "Повар", station: "Холодный цех", time: "11:00-22:00", status: "На смене", phone: "+48123123124", avatar: "И" },
+  { id: 3, name: "Матеуш", role: "Повар", station: "Горячий цех", time: "12:00-23:00", status: "Ожидается", phone: "+48123123125", avatar: "М" },
+  { id: 4, name: "Саша", role: "Повар", station: "Заготовочный", time: "08:00-16:00", status: "На смене", phone: "+48123123126", avatar: "С" },
+  { id: 5, name: "Ника", role: "Повар", station: "Суши", time: "14:00-23:00", status: "Ожидается", phone: "+48123123127", avatar: "Н" },
+];
+
+const stationGuides = [
+  {
+    id: "cold",
+    name: "Холодный цех",
+    owner: "Ирина",
+    status: "В работе",
+    description: "Салаты, тартары, холодные закуски, заготовки для подачи без горячей линии.",
+    duties: ["Проверить зелень и соусы", "Поддерживать чистую доску", "Обновлять фото эталона подачи"],
+    mistakes: ["Не смешивать аллергенные соусы", "Не держать рыбу вне холода дольше 10 минут"],
+  },
+  {
+    id: "hot",
+    name: "Горячий цех",
+    owner: "Матеуш",
+    status: "Ожидается",
+    description: "Основные блюда, термообработка, гарниры, контроль температуры подачи.",
+    duties: ["Разогреть линию к 17:30", "Проверить термощуп", "Подготовить гарниры на пик"],
+    mistakes: ["Не отдавать блюдо без проверки pass", "Не смешивать щипцы сырого и готового продукта"],
+  },
+  {
+    id: "prep",
+    name: "Заготовочный",
+    owner: "Саша",
+    status: "На смене",
+    description: "Mise en place, нарезки, маринады, полуфабрикаты и маркировка сроков.",
+    duties: ["Промаркировать контейнеры", "Сверить план заготовок", "Отметить остатки ниже нормы"],
+    mistakes: ["Не оставлять контейнеры без даты", "Не принимать продукт без температуры"],
+  },
+  {
+    id: "pass",
+    name: "Pass / выдача",
+    owner: "Олег",
+    status: "На смене",
+    description: "Контроль финальной подачи, стоп-лист, коммуникация зала и кухни.",
+    duties: ["Подтвердить стоп-лист", "Сверить VIP-заметки", "Ускорять конфликтные заказы"],
+    mistakes: ["Не менять ТТК устно", "Не отдавать блюдо без финального контроля"],
+  },
 ];
 
 const initialTasks = [
-  { id: 1, title: "Проверить заготовки соусов", zone: "Холодный цех", done: false, priority: "high" },
-  { id: 2, title: "Принять поставку рыбы", zone: "Склад", done: false, priority: "high" },
-  { id: 3, title: "Обновить стоп-лист", zone: "Pass", done: true, priority: "normal" },
-  { id: 4, title: "Брифинг по банкету 19:30", zone: "Команда", done: false, priority: "normal" },
+  { id: 1, title: "Принять рыбу и температуру", station: "Склад", due: "10:45", done: false, priority: "critical" },
+  { id: 2, title: "Бер блан 2 литра", station: "Горячий цех", due: "12:00", done: false, priority: "normal" },
+  { id: 3, title: "Обновить стоп-лист по тунцу", station: "Pass", due: "сейчас", done: false, priority: "critical" },
+  { id: 4, title: "Фото эталона тартара", station: "Холодный цех", due: "14:30", done: true, priority: "normal" },
 ];
 
-const recipeFilters = ["Все", "Закуски", "Супы", "Горячее", "Соусы"];
+const stopList = [
+  { id: 1, item: "Тунец Bluefin", reason: "Поставка на проверке", station: "Холодный цех" },
+  { id: 2, item: "Пюре батат", reason: "Осталось на 4 порции", station: "Горячий цех" },
+];
+
+const inventoryItems = [
+  { id: 1, name: "Тунец", station: "Холодный цех", stock: "1 лоток", par: "4 лотка", status: "critical", supplier: "Nord Fish" },
+  { id: 2, name: "Сливочное масло", station: "Горячий цех", stock: "2 пачки", par: "8 пачек", status: "low", supplier: "Prime Market" },
+  { id: 3, name: "Соевый соус", station: "Суши", stock: "1 банка", par: "6 банок", status: "low", supplier: "Asian Pro" },
+  { id: 4, name: "Микс зелени", station: "Холодный цех", stock: "норма", par: "3 бокса", status: "ok", supplier: "Bio Herbs" },
+];
 
 const recipes = [
   {
@@ -57,8 +109,9 @@ const recipes = [
     time: "12 мин",
     yield: "180 г",
     cost: "4.80 EUR",
-    emoji: "🥗",
+    allergens: "рыба, кунжут",
     image: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=240&q=80",
+    steps: ["Охладить миску и нож", "Нарезать кубик 6 мм", "Смешать с соусом перед отдачей", "Проверить фото эталона"],
   },
   {
     id: 2,
@@ -67,8 +120,9 @@ const recipes = [
     time: "28 мин",
     yield: "320 г",
     cost: "2.10 EUR",
-    emoji: "🍲",
+    allergens: "сливки",
     image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=240&q=80",
+    steps: ["Прогреть основу", "Пробить до гладкости", "Проверить соль", "Подать с семечками"],
   },
   {
     id: 3,
@@ -77,48 +131,18 @@ const recipes = [
     time: "34 мин",
     yield: "260 г",
     cost: "7.40 EUR",
-    emoji: "🍽️",
+    allergens: "нет",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=240&q=80",
-  },
-  {
-    id: 4,
-    title: "Бер блан",
-    category: "Соусы",
-    time: "18 мин",
-    yield: "500 г",
-    cost: "3.35 EUR",
-    emoji: "🧈",
-    image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=240&q=80",
+    steps: ["Надсечь кожу", "Старт на холодной сковороде", "Довести до 56 C", "Отдых 6 минут"],
   },
 ];
 
-const suppliers = [
-  { id: 1, name: "Nord Fish", category: "Рыба и морепродукты", minimum: "250 EUR", rating: "98%" },
-  { id: 2, name: "Bio Herbs", category: "Зелень и овощи", minimum: "90 EUR", rating: "94%" },
-  { id: 3, name: "Prime Meat", category: "Мясо и птица", minimum: "300 EUR", rating: "96%" },
-];
+const recipeFilters = ["Все", "Закуски", "Супы", "Горячее", "Соусы"];
 
-const clients = [
-  { id: 1, name: "Марина Волкова", category: "VIP, без лактозы", minimum: "Любит стол 12", rating: "5 визитов" },
-  { id: 2, name: "Андрей Левин", category: "Дегустационное меню", minimum: "Без кинзы", rating: "12 визитов" },
-  { id: 3, name: "Yulia Group", category: "Корпоративный банкет", minimum: "18 персон", rating: "Срочно" },
-];
-
-const week = [
-  { day: "Пн", date: "02", active: true },
-  { day: "Вт", date: "03" },
-  { day: "Ср", date: "04" },
-  { day: "Чт", date: "05" },
-  { day: "Пт", date: "06" },
-  { day: "Сб", date: "07" },
-  { day: "Вс", date: "08" },
-];
-
-const staff = [
-  { id: 1, name: "Олег", role: "Су-шеф", time: "09:00-18:00", status: "На смене", color: "bg-green-500", avatar: "О" },
-  { id: 2, name: "Ирина", role: "Холодный цех", time: "11:00-22:00", status: "Ожидается", color: "bg-amber-500", avatar: "И" },
-  { id: 3, name: "Матеуш", role: "Горячий цех", time: "12:00-23:00", status: "На смене", color: "bg-green-500", avatar: "М" },
-  { id: 4, name: "Саша", role: "Заготовки", time: "08:00-16:00", status: "На смене", color: "bg-green-500", avatar: "С" },
+const initialActivity = [
+  { id: 1, actor: "Олег", action: "Поставил тунца в стоп-лист", meta: "Pass", time: "10:08", tone: "red" },
+  { id: 2, actor: "Ирина", action: "Отметила: соевый соус, осталась 1 банка", meta: "Суши", time: "10:14", tone: "amber" },
+  { id: 3, actor: "Саша", action: "Закрыл задачу по фото эталона", meta: "Холодный цех", time: "10:20", tone: "green" },
 ];
 
 const messages = [
@@ -128,43 +152,76 @@ const messages = [
 ];
 
 function App() {
-  const [activeTab, setActiveTab] = React.useState("dashboard");
+  const [activeTab, setActiveTab] = React.useState("shift");
   const [tasks, setTasks] = React.useState(initialTasks);
-  const [recipeFilter, setRecipeFilter] = React.useState("Все");
-  const [databaseMode, setDatabaseMode] = React.useState("suppliers");
-  const [selectedDay, setSelectedDay] = React.useState("02");
+  const [activity, setActivity] = React.useState(initialActivity);
+  const [inventoryReports, setInventoryReports] = React.useState([]);
   const [query, setQuery] = React.useState("");
+  const [recipeFilter, setRecipeFilter] = React.useState("Все");
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
+  const [selectedStation, setSelectedStation] = React.useState(null);
+  const [staffOpen, setStaffOpen] = React.useState(false);
   const [quickPanelOpen, setQuickPanelOpen] = React.useState(false);
-  const [callToast, setCallToast] = React.useState("");
+  const [toast, setToast] = React.useState("");
+
+  function addActivity(action, meta, tone = "amber", actor = "Chef") {
+    setActivity((current) => [{ id: Date.now(), actor, action, meta, time: "сейчас", tone }, ...current]);
+  }
+
+  function reportInventory(item, level) {
+    const action = `${item.name}: ${level}`;
+    setInventoryReports((current) => [{ id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier }, ...current]);
+    addActivity(action, item.station, level === "закончилось" ? "red" : "amber", "Повар");
+    setToast(`Сигнал отправлен су-шефу: ${item.name}`);
+  }
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredRecipes = (recipeFilter === "Все" ? recipes : recipes.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category}`.toLowerCase().includes(normalizedQuery)
+    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
   );
 
   const screenTitle = {
-    dashboard: "Обзор смены",
+    shift: "Смена сейчас",
     recipes: "ТТК",
-    database: "Справочники",
-    schedule: "График смен",
+    inventory: "Склад",
+    stations: "Цеха",
     chat: "# Общая кухня",
   }[activeTab];
 
   return (
     <main className="min-h-screen px-3 py-3 text-slate-900 sm:px-6">
-      <section className="relative mx-auto flex min-h-[calc(100vh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft sm:min-h-[860px]">
+      <section className="relative mx-auto flex min-h-[calc(100vh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft lg:max-w-5xl">
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} />
-        <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2">
-          {activeTab === "dashboard" && <Dashboard tasks={tasks} setTasks={setTasks} query={query} setQuery={setQuery} />}
-          {activeTab === "recipes" && <Recipes filter={recipeFilter} setFilter={setRecipeFilter} recipes={filteredRecipes} query={query} setQuery={setQuery} setSelectedRecipe={setSelectedRecipe} />}
-          {activeTab === "database" && <DatabaseScreen mode={databaseMode} setMode={setDatabaseMode} setCallToast={setCallToast} />}
-          {activeTab === "schedule" && <Schedule selectedDay={selectedDay} setSelectedDay={setSelectedDay} />}
+        <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2 lg:px-6">
+          {activeTab === "shift" && (
+            <ShiftScreen
+              tasks={tasks}
+              setTasks={setTasks}
+              activity={activity}
+              addActivity={addActivity}
+              setStaffOpen={setStaffOpen}
+              setToast={setToast}
+            />
+          )}
+          {activeTab === "recipes" && (
+            <Recipes
+              filter={recipeFilter}
+              setFilter={setRecipeFilter}
+              recipes={filteredRecipes}
+              query={query}
+              setQuery={setQuery}
+              setSelectedRecipe={setSelectedRecipe}
+            />
+          )}
+          {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} />}
+          {activeTab === "stations" && <StationsScreen setSelectedStation={setSelectedStation} />}
           {activeTab === "chat" && <Chat />}
         </div>
-        {callToast && <Toast message={callToast} onClose={() => setCallToast("")} />}
+        {toast && <Toast message={toast} onClose={() => setToast("")} />}
+        {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+        {selectedStation && <StationSheet station={selectedStation} onClose={() => setSelectedStation(null)} />}
         {quickPanelOpen && <QuickPanel activeTab={activeTab} onClose={() => setQuickPanelOpen(false)} />}
         <Fab activeTab={activeTab} onClick={() => setQuickPanelOpen(true)} />
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -187,11 +244,11 @@ function StatusBar() {
 
 function AppHeader({ title, activeTab }) {
   return (
-    <header className="px-4 pb-3 pt-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-amber-600">{activeTab === "dashboard" ? "Chef OS" : "Kitchen Command"}</p>
-          <h1 className="text-3xl font-black leading-tight tracking-normal text-slate-950">{title}</h1>
+    <header className="px-4 pb-3 pt-2 lg:px-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-600">{activeTab === "shift" ? "Chef OS" : "Kitchen Command"}</p>
+          <h1 className="truncate text-3xl font-black leading-tight tracking-normal text-slate-950">{title}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button className="grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Уведомления">
@@ -207,90 +264,164 @@ function AppHeader({ title, activeTab }) {
   );
 }
 
-function Dashboard({ tasks, setTasks, query, setQuery }) {
+function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, setToast }) {
+  const openTasks = tasks.filter((task) => !task.done).length;
+
+  function toggleTask(task) {
+    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, done: !item.done } : item)));
+    if (!task.done) {
+      addActivity(`Закрыл задачу: ${task.title}`, task.station, "green");
+    }
+  }
+
   return (
-    <div className="space-y-5">
-      <SearchBox value={query} onChange={setQuery} />
-      <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} stat={stat} />
-        ))}
+    <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="space-y-5">
+        <section className="rounded-3xl bg-slate-900 p-4 text-white shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-slate-300">Пик смены</p>
+              <p className="text-2xl font-black">18:30-21:00</p>
+            </div>
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500 text-white">
+              <Flame size={28} />
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <ShiftMetric label="Люди" value="5" onClick={() => setStaffOpen(true)} />
+            <ShiftMetric label="Задачи" value={String(openTasks)} />
+            <ShiftMetric label="Стоп" value={String(stopList.length)} danger />
+          </div>
+        </section>
+
+        <section>
+          <SectionHead title="Критично сейчас" badge={`${stopList.length} стоп`} />
+          <div className="space-y-3">
+            {stopList.map((item) => (
+              <article key={item.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-red-50 p-3 text-left shadow-sm">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-500 text-white">
+                  <AlertTriangle size={24} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-black text-red-950">{item.item}</p>
+                  <p className="text-sm font-bold text-red-700">{item.reason} · {item.station}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <SectionHead title="Mise en place" badge={`${openTasks} активны`} />
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <button key={task.id} onClick={() => toggleTask(task)} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
+                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${task.done ? "bg-green-500 text-white" : task.priority === "critical" ? "bg-red-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                  {task.done ? <Check size={24} strokeWidth={3} /> : <Clock3 size={24} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-base font-black ${task.done ? "text-slate-400 line-through" : "text-slate-950"}`}>{task.title}</span>
+                  <span className="text-sm font-semibold text-slate-500">{task.station} · до {task.due}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-black">Задачи на смену</h2>
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-extrabold text-amber-700">{tasks.filter((task) => !task.done).length} активны</span>
-        </div>
-        <div className="space-y-3">
-          {tasks.map((task) => (
-            <button
-              key={task.id}
-              onClick={() => setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, done: !item.done } : item)))}
-              className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm"
-            >
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${task.done ? "bg-green-500 text-white" : task.priority === "high" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-600"}`}>
-                {task.done ? <Check size={24} strokeWidth={3} /> : <Minus size={24} strokeWidth={3} />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className={`block text-base font-black ${task.done ? "text-slate-400 line-through" : "text-slate-950"}`}>{task.title}</span>
-                <span className="text-sm font-semibold text-slate-500">{task.zone}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
-      <ActionStrip />
+
+      <div className="space-y-5">
+        <section>
+          <SectionHead title="Быстрые сигналы" />
+          <div className="grid grid-cols-2 gap-3">
+            {["Закончился продукт", "Осталась 1 банка", "Нужен су-шеф", "Фото проблемы"].map((label) => (
+              <button key={label} onClick={() => setToast(`Сигнал создан: ${label}`)} className="flex min-h-20 flex-col justify-between rounded-3xl bg-white p-4 text-left shadow-sm">
+                <Sparkles className="text-amber-500" size={24} />
+                <span className="text-sm font-black text-slate-950">{label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+        <ActivityLog activity={activity} />
+      </div>
     </div>
   );
 }
 
-function SearchBox({ value, onChange }) {
+function ShiftMetric({ label, value, danger, onClick }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <label className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm">
-      <Search className="text-slate-400" size={22} />
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-slate-400" placeholder="Блюдо, поставщик, VIP..." />
-    </label>
+    <Tag onClick={onClick} className={`min-h-20 rounded-2xl p-3 text-left ${danger ? "bg-red-500" : "bg-white/10"} ${onClick ? "cursor-pointer" : ""}`}>
+      <p className="text-xs font-bold text-white/75">{label}</p>
+      <p className="text-3xl font-black text-white">{value}</p>
+    </Tag>
   );
 }
 
-function StatCard({ stat }) {
-  const Icon = stat.icon;
-  const tone = {
-    amber: "bg-amber-500 text-white",
-    green: "bg-green-500 text-white",
-    red: "bg-red-500 text-white",
-  }[stat.tone];
-
+function InventoryScreen({ reports, onReport }) {
   return (
-    <article className="min-w-[76%] snap-start rounded-3xl bg-white p-4 shadow-sm">
-      <div className="mb-5 flex items-center justify-between">
-        <span className={`grid h-12 w-12 place-items-center rounded-2xl ${tone}`}>
-          <Icon size={24} />
-        </span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-extrabold text-slate-600">{stat.delta}</span>
-      </div>
-      <p className="text-sm font-bold text-slate-500">{stat.label}</p>
-      <p className="text-4xl font-black tracking-normal text-slate-950">{stat.value}</p>
-    </article>
+    <div className="grid gap-5 lg:grid-cols-[1fr_0.85fr]">
+      <section className="space-y-3">
+        <SectionHead title="Остатки по цехам" badge="повар сигналит" />
+        {inventoryItems.map((item) => (
+          <article key={item.id} className="rounded-3xl bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-black text-slate-950">{item.name}</p>
+                <p className="text-sm font-semibold text-slate-500">{item.station} · поставщик {item.supplier}</p>
+              </div>
+              <StatusPill status={item.status} />
+            </div>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <Metric label="Сейчас" value={item.stock} />
+              <Metric label="Норма" value={item.par} />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <SignalButton label="мало" onClick={() => onReport(item, "мало")} />
+              <SignalButton label="1 банка" onClick={() => onReport(item, "осталась 1 банка")} />
+              <SignalButton label="нет" danger onClick={() => onReport(item, "закончилось")} />
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section>
+        <SectionHead title="Заявки поваров" badge={`${reports.length} новых`} />
+        <div className="space-y-3">
+          {reports.length === 0 && (
+            <div className="rounded-3xl bg-white p-5 text-center shadow-sm">
+              <ShoppingBasket className="mx-auto mb-3 text-slate-300" size={34} />
+              <p className="text-lg font-black text-slate-950">Пока нет сигналов</p>
+              <p className="mt-1 text-sm font-semibold text-slate-500">Когда повар отметит остаток, су-шеф увидит это здесь.</p>
+            </div>
+          )}
+          {reports.map((report) => (
+            <article key={report.id} className="rounded-3xl bg-amber-50 p-4 shadow-sm">
+              <p className="text-base font-black text-amber-950">{report.item}: {report.level}</p>
+              <p className="text-sm font-bold text-amber-700">{report.station} · {report.supplier}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
-function ActionStrip() {
+function StationsScreen({ setSelectedStation }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {[
-        { label: "Стоп", icon: ShieldCheck, color: "bg-red-500" },
-        { label: "Заказ", icon: ShoppingBasket, color: "bg-amber-500" },
-        { label: "Бриф", icon: Sparkles, color: "bg-slate-900" },
-      ].map((action) => {
-        const Icon = action.icon;
-        return (
-          <button key={action.label} className={`${action.color} flex min-h-20 flex-col items-center justify-center gap-1 rounded-3xl text-white shadow-sm`}>
-            <Icon size={24} />
-            <span className="text-sm font-black">{action.label}</span>
-          </button>
-        );
-      })}
+    <div className="grid gap-3 lg:grid-cols-2">
+      {stationGuides.map((station) => (
+        <button key={station.id} onClick={() => setSelectedStation(station)} className="min-h-36 rounded-3xl bg-white p-4 text-left shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700">
+              <ChefHat size={25} />
+            </span>
+            <span className={`rounded-full px-3 py-1 text-xs font-black text-white ${station.status === "Ожидается" ? "bg-amber-500" : "bg-green-500"}`}>{station.status}</span>
+          </div>
+          <p className="text-xl font-black text-slate-950">{station.name}</p>
+          <p className="mt-1 text-sm font-bold text-slate-500">Ответственный: {station.owner}</p>
+          <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-600">{station.description}</p>
+        </button>
+      ))}
     </div>
   );
 }
@@ -301,21 +432,16 @@ function Recipes({ filter, setFilter, recipes, query, setQuery, setSelectedRecip
       <SearchBox value={query} onChange={setQuery} />
       <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
         {recipeFilters.map((item) => (
-          <button
-            key={item}
-            onClick={() => setFilter(item)}
-            className={`min-h-12 shrink-0 rounded-2xl px-5 text-sm font-black ${filter === item ? "bg-slate-900 text-white" : "bg-white text-slate-600 shadow-sm"}`}
-          >
+          <button key={item} onClick={() => setFilter(item)} className={`min-h-12 shrink-0 rounded-2xl px-5 text-sm font-black ${filter === item ? "bg-slate-900 text-white" : "bg-white text-slate-600 shadow-sm"}`}>
             {item}
           </button>
         ))}
       </div>
-      <div className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {recipes.map((recipe) => (
           <button key={recipe.id} onClick={() => setSelectedRecipe(recipe)} className="flex min-h-28 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-amber-100">
+            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-amber-100">
               <img src={recipe.image} alt="" className="h-full w-full object-cover" />
-              <span className="absolute bottom-1 right-1 grid h-8 w-8 place-items-center rounded-full bg-white text-lg shadow-sm">{recipe.emoji}</span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-lg font-black text-slate-950">{recipe.title}</p>
@@ -323,11 +449,8 @@ function Recipes({ filter, setFilter, recipes, query, setQuery, setSelectedRecip
                 <Badge icon={Clock3} label={recipe.time} />
                 <Badge icon={ChefHat} label={recipe.yield} />
               </div>
-              <p className="mt-2 text-sm font-bold text-slate-500">Себестоимость: {recipe.cost}</p>
+              <p className="mt-2 text-sm font-bold text-slate-500">Аллергены: {recipe.allergens}</p>
             </div>
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white">
-              <Plus size={24} />
-            </span>
           </button>
         ))}
         {recipes.length === 0 && (
@@ -337,79 +460,6 @@ function Recipes({ filter, setFilter, recipes, query, setQuery, setSelectedRecip
             <p className="mt-1 text-sm font-semibold text-slate-500">Проверь фильтр или запрос поиска.</p>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function DatabaseScreen({ mode, setMode, setCallToast }) {
-  const items = mode === "suppliers" ? suppliers : clients;
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 rounded-3xl bg-white p-1 shadow-sm">
-        <button onClick={() => setMode("suppliers")} className={`min-h-12 rounded-[1.35rem] text-sm font-black ${mode === "suppliers" ? "bg-slate-900 text-white" : "text-slate-500"}`}>
-          Поставщики
-        </button>
-        <button onClick={() => setMode("clients")} className={`min-h-12 rounded-[1.35rem] text-sm font-black ${mode === "clients" ? "bg-slate-900 text-white" : "text-slate-500"}`}>
-          Клиенты
-        </button>
-      </div>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <article key={item.id} className="flex min-h-24 items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700">
-              {mode === "suppliers" ? <ShoppingBasket size={26} /> : <Star size={26} />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-lg font-black text-slate-950">{item.name}</p>
-              <p className="text-sm font-semibold text-slate-500">{item.category}</p>
-              <p className="mt-1 text-sm font-black text-slate-700">{mode === "suppliers" ? "Мин. заказ" : "Заметка"}: {item.minimum}</p>
-            </div>
-            <button onClick={() => setCallToast(`Быстрый звонок: ${item.name}`)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-green-500 text-white" aria-label="Позвонить">
-              <Phone size={22} />
-            </button>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Schedule({ selectedDay, setSelectedDay }) {
-  return (
-    <div className="space-y-4">
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
-        {week.map((item) => {
-          const active = selectedDay === item.date;
-          return (
-            <button key={item.date} onClick={() => setSelectedDay(item.date)} className={`flex h-20 w-16 shrink-0 flex-col items-center justify-center rounded-3xl font-black ${active ? "bg-amber-500 text-white" : "bg-white text-slate-700 shadow-sm"}`}>
-              <span className="text-xs">{item.day}</span>
-              <span className="text-2xl">{item.date}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="rounded-3xl bg-slate-900 p-4 text-white">
-        <div className="flex items-center gap-3">
-          <Flame className="text-amber-400" size={26} />
-          <div>
-            <p className="text-sm font-bold text-slate-300">Пиковая нагрузка</p>
-            <p className="text-xl font-black">18:30-21:00</p>
-          </div>
-        </div>
-      </div>
-      <div className="space-y-3">
-        {staff.map((person) => (
-          <article key={person.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-white p-3 shadow-sm">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-lg font-black text-slate-900">{person.avatar}</div>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-black text-slate-950">{person.name}</p>
-              <p className="text-sm font-semibold text-slate-500">{person.role} · {person.time}</p>
-            </div>
-            <span className={`min-w-24 rounded-full px-3 py-2 text-center text-xs font-black text-white ${person.color}`}>{person.status}</span>
-          </article>
-        ))}
       </div>
     </div>
   );
@@ -446,10 +496,163 @@ function Chat() {
       <div className="flex items-center gap-2 rounded-3xl bg-white p-2 shadow-sm">
         <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => event.key === "Enter" && sendMessage()} className="h-12 min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none placeholder:text-slate-400" placeholder="Сообщение кухне..." />
         <button onClick={sendMessage} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white disabled:bg-slate-200" aria-label="Отправить" disabled={!draft.trim()}>
-          <Plus size={24} />
+          <Send size={22} />
         </button>
       </div>
     </div>
+  );
+}
+
+function StaffSheet({ onClose, setToast }) {
+  return (
+    <Sheet onClose={onClose} title="Люди на смене">
+      <div className="space-y-3">
+        {staff.map((person) => (
+          <article key={person.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-slate-50 p-3">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">{person.avatar}</div>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-black text-slate-950">{person.name}</p>
+              <p className="text-sm font-semibold text-slate-500">{person.role} · {person.station} · {person.time}</p>
+            </div>
+            <a href={`tel:${person.phone}`} onClick={() => setToast(`Звонок: ${person.name}`)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-green-500 text-white" aria-label={`Позвонить ${person.name}`}>
+              <Phone size={22} />
+            </a>
+          </article>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function RecipeSheet({ recipe, onClose }) {
+  return (
+    <Sheet onClose={onClose} title={recipe.title} eyebrow={recipe.category}>
+      <div className="mb-4 h-40 overflow-hidden rounded-3xl bg-amber-100">
+        <img src={recipe.image} alt="" className="h-full w-full object-cover" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <Metric label="Время" value={recipe.time} />
+        <Metric label="Выход" value={recipe.yield} />
+        <Metric label="Cost" value={recipe.cost} />
+      </div>
+      <div className="mt-4 rounded-3xl bg-slate-50 p-4">
+        <p className="text-sm font-black text-slate-500">Шаги</p>
+        <ol className="mt-2 space-y-2">
+          {recipe.steps.map((step, index) => (
+            <li key={step} className="flex gap-2 text-sm font-bold text-slate-800">
+              <span className="text-amber-600">{index + 1}.</span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </Sheet>
+  );
+}
+
+function StationSheet({ station, onClose }) {
+  return (
+    <Sheet onClose={onClose} title={station.name} eyebrow={`Ответственный: ${station.owner}`}>
+      <p className="rounded-3xl bg-slate-50 p-4 text-base font-bold leading-snug text-slate-800">{station.description}</p>
+      <div className="mt-4 grid gap-3">
+        <ProcessBlock title="Что делает цех" items={station.duties} />
+        <ProcessBlock title="Нельзя" items={station.mistakes} danger />
+      </div>
+    </Sheet>
+  );
+}
+
+function QuickPanel({ activeTab, onClose }) {
+  const actions = {
+    shift: ["Создать задачу", "Обновить стоп-лист", "Открыть брифинг"],
+    recipes: ["Новая ТТК", "Фото эталона", "Расчет фудкоста"],
+    inventory: ["Сигнал: продукт закончился", "Создать заявку поставщику", "Добавить фото"],
+    stations: ["Новый процесс", "Назначить ответственного", "Проверить чек-лист"],
+    chat: ["Закрепить объявление", "Позвать су-шефа", "Отправить фото"],
+  }[activeTab];
+
+  return (
+    <Sheet onClose={onClose} title="Быстрое действие">
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <button key={action} onClick={onClose} className="flex min-h-14 w-full items-center justify-between rounded-2xl bg-slate-50 px-4 text-left text-base font-black text-slate-900">
+            {action}
+            {action.includes("фото") || action.includes("Фото") ? <Camera className="text-amber-500" size={22} /> : <Plus className="text-amber-500" size={22} />}
+          </button>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function ActivityLog({ activity }) {
+  return (
+    <section>
+      <SectionHead title="Журнал действий" />
+      <div className="space-y-3">
+        {activity.slice(0, 5).map((event) => (
+          <article key={event.id} className="flex gap-3 rounded-3xl bg-white p-3 shadow-sm">
+            <span className={`mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-white ${event.tone === "red" ? "bg-red-500" : event.tone === "green" ? "bg-green-500" : "bg-amber-500"}`}>
+              <History size={20} />
+            </span>
+            <div>
+              <p className="text-sm font-black text-slate-950">{event.action}</p>
+              <p className="text-xs font-bold text-slate-500">{event.actor} · {event.meta} · {event.time}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SearchBox({ value, onChange }) {
+  return (
+    <label className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm">
+      <Search className="text-slate-400" size={22} />
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-slate-400" placeholder="Блюдо, аллерген, цех..." />
+    </label>
+  );
+}
+
+function SectionHead({ title, badge }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="text-xl font-black text-slate-950">{title}</h2>
+      {badge && <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-extrabold text-amber-700">{badge}</span>}
+    </div>
+  );
+}
+
+function Metric({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-slate-100 p-3 text-center">
+      <p className="text-xs font-black text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function StatusPill({ status }) {
+  const map = {
+    critical: "bg-red-500 text-white",
+    low: "bg-amber-500 text-white",
+    ok: "bg-green-500 text-white",
+  };
+  const label = {
+    critical: "критично",
+    low: "мало",
+    ok: "норма",
+  }[status];
+
+  return <span className={`rounded-full px-3 py-1 text-xs font-black ${map[status]}`}>{label}</span>;
+}
+
+function SignalButton({ label, danger, onClick }) {
+  return (
+    <button onClick={onClick} className={`min-h-12 rounded-2xl px-2 text-sm font-black ${danger ? "bg-red-500 text-white" : "bg-slate-100 text-slate-800"}`}>
+      {label}
+    </button>
   );
 }
 
@@ -459,6 +662,22 @@ function Badge({ icon: Icon, label }) {
       <Icon size={14} />
       {label}
     </span>
+  );
+}
+
+function ProcessBlock({ title, items, danger }) {
+  return (
+    <div className={`rounded-3xl p-4 ${danger ? "bg-red-50" : "bg-amber-50"}`}>
+      <p className={`text-sm font-black ${danger ? "text-red-700" : "text-amber-700"}`}>{title}</p>
+      <ul className="mt-2 space-y-2">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2 text-sm font-bold text-slate-800">
+            <ShieldCheck className={danger ? "text-red-500" : "text-amber-500"} size={18} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -478,71 +697,20 @@ function Toast({ message, onClose }) {
   );
 }
 
-function RecipeSheet({ recipe, onClose }) {
+function Sheet({ title, eyebrow, children, onClose }) {
   return (
     <div className="absolute inset-0 z-40 flex items-end bg-slate-950/35 p-3 backdrop-blur-sm">
-      <section className="w-full rounded-[2rem] bg-white p-4 shadow-soft">
+      <section className="max-h-[86vh] w-full overflow-y-auto rounded-[2rem] bg-white p-4 shadow-soft">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-amber-600">{recipe.category}</p>
-            <h2 className="text-2xl font-black text-slate-950">{recipe.title}</h2>
+          <div className="min-w-0">
+            {eyebrow && <p className="text-sm font-black uppercase tracking-wide text-amber-600">{eyebrow}</p>}
+            <h2 className="text-2xl font-black text-slate-950">{title}</h2>
           </div>
-          <button onClick={onClose} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Закрыть ТТК">
+          <button onClick={onClose} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Закрыть">
             <X size={24} />
           </button>
         </div>
-        <div className="mb-4 h-40 overflow-hidden rounded-3xl bg-amber-100">
-          <img src={recipe.image} alt="" className="h-full w-full object-cover" />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Metric label="Время" value={recipe.time} />
-          <Metric label="Выход" value={recipe.yield} />
-          <Metric label="Cost" value={recipe.cost} />
-        </div>
-        <div className="mt-4 rounded-3xl bg-slate-50 p-4">
-          <p className="text-sm font-black text-slate-500">Контроль шефа</p>
-          <p className="mt-1 text-base font-bold leading-snug text-slate-900">Проверить mise en place, температуру подачи и фото эталона перед запуском блюда на линию.</p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function Metric({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-slate-100 p-3 text-center">
-      <p className="text-xs font-black text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
-    </div>
-  );
-}
-
-function QuickPanel({ activeTab, onClose }) {
-  const actions = {
-    dashboard: ["Создать задачу", "Обновить стоп-лист", "Сделать брифинг"],
-    recipes: ["Новая ТТК", "Фото эталона", "Расчет фудкоста"],
-    database: ["Новый поставщик", "Новый VIP", "Сверка заказа"],
-    schedule: ["Добавить смену", "Позвать замену", "Отметить опоздание"],
-    chat: ["Закрепить объявление", "Позвать су-шефа", "Отправить фото"],
-  }[activeTab];
-
-  return (
-    <div className="absolute inset-0 z-40 flex items-end bg-slate-950/35 p-3 backdrop-blur-sm">
-      <section className="w-full rounded-[2rem] bg-white p-4 shadow-soft">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-black text-slate-950">Быстрое действие</h2>
-          <button onClick={onClose} className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Закрыть быстрые действия">
-            <X size={24} />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {actions.map((action) => (
-            <button key={action} onClick={onClose} className="flex min-h-14 w-full items-center justify-between rounded-2xl bg-slate-50 px-4 text-left text-base font-black text-slate-900">
-              {action}
-              <Plus className="text-amber-500" size={22} />
-            </button>
-          ))}
-        </div>
+        {children}
       </section>
     </div>
   );
@@ -550,10 +718,10 @@ function QuickPanel({ activeTab, onClose }) {
 
 function Fab({ activeTab, onClick }) {
   const labels = {
-    dashboard: "Быстрое действие",
+    shift: "Быстрое действие смены",
     recipes: "Добавить ТТК",
-    database: "Новый контакт",
-    schedule: "Новая смена",
+    inventory: "Сигнал склада",
+    stations: "Новый процесс",
     chat: "Новое сообщение",
   };
 
