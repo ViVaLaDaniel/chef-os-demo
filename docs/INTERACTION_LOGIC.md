@@ -162,7 +162,8 @@ Every quick action should have:
 - The top status area should show real device time.
 - Next to the time, show countdown to shift end.
 - Under the page title, show date and shift window.
-- The shift screen should show a week schedule strip so cooks understand today and upcoming workload.
+- The shift screen may show a compact schedule entry point, but it must not place a wide calendar strip in the main flow if that creates horizontal page overflow.
+- Full cook schedule should live in a dedicated sheet/tab with its own vertical layout.
 - Later, shift time and schedule data must come from Supabase, not hardcoded demo data.
 
 ## Safety And Simplicity

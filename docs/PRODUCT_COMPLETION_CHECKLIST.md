@@ -7,13 +7,14 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Show real current time.
 - [x] Show countdown to shift end.
 - [x] Show date under the main title.
-- [x] Show week schedule strip for cooks.
+- [ ] Design a compact schedule view that does not create horizontal page overflow.
 - [ ] Use real shift start/end from database.
 - [ ] Let chef edit shift start/end/peak window.
 - [ ] Show late/absent staff.
 - [ ] Show handover between shifts.
 - [ ] Add month calendar for managers.
 - [ ] Add daily station staffing view.
+- [ ] Put cook schedule in a dedicated tab/sheet, not as a wide inline strip on the main shift screen.
 
 ## Cook Profile
 

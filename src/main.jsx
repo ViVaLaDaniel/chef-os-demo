@@ -54,14 +54,6 @@ const currentShift = {
   peakWindow: "18:30-21:00",
 };
 
-const scheduleDays = [
-  { id: "today", day: "Ср", date: "03", load: "Пик", cooks: 5, active: true },
-  { id: "thu", day: "Чт", date: "04", load: "Банкет", cooks: 7 },
-  { id: "fri", day: "Пт", date: "05", load: "Пик", cooks: 8 },
-  { id: "sat", day: "Сб", date: "06", load: "Полная", cooks: 9 },
-  { id: "sun", day: "Вс", date: "07", load: "Тише", cooks: 4 },
-];
-
 const universalInstructions = [
   "Мой руки перед стартом, после сырого продукта, телефона, мусора и перчаток.",
   "Аллергены держи отдельно: доска, нож, соус, контейнер и ложка не смешиваются.",
@@ -389,8 +381,8 @@ function App() {
   }[activeTab];
 
   return (
-    <main className="min-h-screen px-3 py-3 text-slate-900 sm:px-6">
-      <section className="relative mx-auto flex h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft lg:max-w-5xl">
+    <main className="min-h-screen overflow-x-hidden px-3 py-3 text-slate-900 sm:px-6">
+      <section className="relative mx-auto flex h-[calc(100dvh-24px)] w-full max-w-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft sm:max-w-md lg:max-w-5xl">
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} onNotifications={() => setNotificationsOpen(true)} onProfile={() => setProfileOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
@@ -517,8 +509,6 @@ function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, tog
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
       <div className="space-y-5">
-        <ScheduleStrip setStaffOpen={setStaffOpen} />
-
         <section className="rounded-3xl bg-white p-4 shadow-sm">
           <div className="flex items-start gap-3">
             <button onClick={() => setSelectedStation(stationGuides.find((station) => station.id === currentCook.stationId))} className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-amber-500 text-lg font-black text-white" aria-label="Открыть мою станцию">
@@ -1027,33 +1017,6 @@ function ChecklistOverview({ stationChecklists, setSelectedStation }) {
             </button>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-function ScheduleStrip({ setStaffOpen }) {
-  return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-amber-600">График</p>
-          <h2 className="text-xl font-black text-slate-950">Неделя кухни</h2>
-        </div>
-        <button onClick={() => setStaffOpen(true)} className="min-h-12 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white">
-          Люди
-        </button>
-      </div>
-      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
-        {scheduleDays.map((day) => (
-          <button key={day.id} onClick={() => setStaffOpen(true)} className={`flex h-24 min-w-20 shrink-0 flex-col justify-between rounded-2xl p-3 text-left ${day.active ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-800"}`}>
-            <span className="text-xs font-black">{day.day}</span>
-            <span className="text-2xl font-black">{day.date}</span>
-            <span className={`rounded-full px-2 py-1 text-center text-[11px] font-black ${day.active ? "bg-white/20 text-white" : "bg-white text-slate-600"}`}>
-              {day.cooks} · {day.load}
-            </span>
-          </button>
-        ))}
       </div>
     </section>
   );
