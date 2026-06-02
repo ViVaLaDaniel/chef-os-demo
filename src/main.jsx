@@ -53,6 +53,14 @@ const universalInstructions = [
   "Любой риск по температуре, запаху, сроку или упаковке сразу в стоп-сигнал.",
 ];
 
+const initialGeneralChecklist = [
+  { id: "brief", title: "Короткий бриф смены проведен", station: "Команда", done: true },
+  { id: "stop", title: "Стоп-лист подтвержден у pass", station: "Pass", done: false },
+  { id: "allergens", title: "VIP и аллергены сверены", station: "Pass", done: false },
+  { id: "stock", title: "Критичные остатки проверены", station: "Склад", done: false },
+  { id: "hygiene", title: "Гигиена и маркировка проверены", station: "Все цеха", done: false },
+];
+
 const stationGuides = [
   {
     id: "cold",
@@ -115,6 +123,23 @@ const stationGuides = [
     close: ["Списать остатки по правилам", "Промыть и высушить коврики", "Отметить соусы и нори"],
   },
 ];
+
+const phaseLabels = {
+  setup: "До сервиса",
+  service: "Во время сервиса",
+  close: "Закрытие",
+};
+
+const initialStationChecklists = Object.fromEntries(
+  stationGuides.map((station) => [
+    station.id,
+    {
+      setup: makeChecklist(station.setup, `${station.id}-setup`),
+      service: makeChecklist(station.service, `${station.id}-service`),
+      close: makeChecklist(station.close, `${station.id}-close`),
+    },
+  ])
+);
 
 const initialTasks = [
   { id: 1, title: "Принять рыбу и температуру", station: "Склад", due: "10:45", done: false, priority: "critical" },
@@ -188,6 +213,8 @@ const messages = [
 function App() {
   const [activeTab, setActiveTab] = React.useState("shift");
   const [tasks, setTasks] = React.useState(initialTasks);
+  const [generalChecklist, setGeneralChecklist] = React.useState(initialGeneralChecklist);
+  const [stationChecklists, setStationChecklists] = React.useState(initialStationChecklists);
   const [activity, setActivity] = React.useState(initialActivity);
   const [inventoryReports, setInventoryReports] = React.useState([]);
   const [query, setQuery] = React.useState("");
@@ -263,6 +290,26 @@ function App() {
     setQuickPanelOpen(false);
   }
 
+  function toggleGeneralChecklist(item) {
+    setGeneralChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)));
+    addActivity(`${item.done ? "Вернул" : "Закрыл"} общий чек: ${item.title}`, item.station, item.done ? "amber" : "green", currentCook.name);
+  }
+
+  function toggleStationChecklist(stationId, phase, itemId) {
+    const station = stationGuides.find((entry) => entry.id === stationId);
+    const item = stationChecklists[stationId]?.[phase]?.find((entry) => entry.id === itemId);
+    setStationChecklists((current) => ({
+      ...current,
+      [stationId]: {
+        ...current[stationId],
+        [phase]: current[stationId][phase].map((entry) => (entry.id === itemId ? { ...entry, done: !entry.done } : entry)),
+      },
+    }));
+    if (item && station) {
+      addActivity(`${item.done ? "Вернул" : "Закрыл"} чек: ${item.title}`, station.name, item.done ? "amber" : "green", currentCook.name);
+    }
+  }
+
   const normalizedQuery = query.trim().toLowerCase();
   const filteredRecipes = (recipeFilter === "Все" ? recipes : recipes.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
     `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
@@ -287,6 +334,9 @@ function App() {
             <ShiftScreen
               tasks={tasks}
               setTasks={setTasks}
+              generalChecklist={generalChecklist}
+              stationChecklists={stationChecklists}
+              toggleGeneralChecklist={toggleGeneralChecklist}
               activity={activity}
               addActivity={addActivity}
               setStaffOpen={setStaffOpen}
@@ -306,7 +356,7 @@ function App() {
             />
           )}
           {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
-          {activeTab === "stations" && <StationsScreen setSelectedStation={setSelectedStation} />}
+          {activeTab === "stations" && <StationsScreen stationChecklists={stationChecklists} setSelectedStation={setSelectedStation} />}
           {activeTab === "chat" && <Chat />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
@@ -315,7 +365,7 @@ function App() {
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
-        {selectedStation && <StationSheet station={selectedStation} onClose={() => setSelectedStation(null)} />}
+        {selectedStation && <StationSheet station={selectedStation} checklist={stationChecklists[selectedStation.id]} onToggleChecklist={toggleStationChecklist} onClose={() => setSelectedStation(null)} />}
         {quickPanelOpen && <QuickPanel activeTab={activeTab} onClose={() => setQuickPanelOpen(false)} onAction={handleQuickAction} />}
         <Fab activeTab={activeTab} onClick={() => setQuickPanelOpen(true)} />
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -378,7 +428,7 @@ function AppHeader({ title, activeTab, onNotifications, onProfile }) {
   );
 }
 
-function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
+function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
   const openTasks = tasks.filter((task) => !task.done).length;
 
   function toggleTask(task) {
@@ -454,9 +504,19 @@ function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, set
             ))}
           </div>
         </section>
+
+        <section>
+          <SectionHead title="Общий чек-лист" badge={formatProgress(getChecklistProgress(generalChecklist))} />
+          <div className="space-y-3">
+            {generalChecklist.map((item) => (
+              <ChecklistRow key={item.id} item={item} meta={item.station} onClick={() => toggleGeneralChecklist(item)} />
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="space-y-5">
+        <ChecklistOverview stationChecklists={stationChecklists} setSelectedStation={setSelectedStation} />
         <section>
           <SectionHead title="Быстрые сигналы" badge="1 касание" />
           <div className="grid grid-cols-2 gap-3">
@@ -548,8 +608,9 @@ function InventoryScreen({ reports, onReport, onConfirm }) {
   );
 }
 
-function StationsScreen({ setSelectedStation }) {
+function StationsScreen({ stationChecklists, setSelectedStation }) {
   const myStation = stationGuides.find((station) => station.id === currentCook.stationId);
+  const myProgress = getStationProgress(stationChecklists[currentCook.stationId]);
 
   return (
     <div className="space-y-5">
@@ -557,6 +618,10 @@ function StationsScreen({ setSelectedStation }) {
         <p className="text-sm font-bold text-slate-300">Текущий профиль</p>
         <p className="text-2xl font-black">{currentCook.name} · {currentCook.station}</p>
         <p className="mt-2 text-sm font-semibold text-slate-200">{currentCook.instruction}</p>
+        <div className="mt-4 rounded-2xl bg-white/10 p-3">
+          <p className="text-xs font-bold text-slate-300">Мой чек-лист</p>
+          <p className="text-2xl font-black text-white">{formatProgress(myProgress)}</p>
+        </div>
         <button onClick={() => setSelectedStation(myStation)} className="mt-4 min-h-12 w-full rounded-2xl bg-amber-500 px-4 text-sm font-black text-white">
           Открыть инструкцию станции
         </button>
@@ -587,6 +652,7 @@ function StationsScreen({ setSelectedStation }) {
               </div>
               <p className="text-xl font-black text-slate-950">{station.name}</p>
               <p className="mt-1 text-sm font-bold text-slate-500">Ответственный: {station.owner}</p>
+              <p className="mt-2 text-sm font-black text-amber-700">Чек-лист: {formatProgress(getStationProgress(stationChecklists[station.id]))}</p>
               <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-600">{station.description}</p>
             </button>
           ))}
@@ -790,14 +856,14 @@ function RecipeSheet({ recipe, onClose }) {
   );
 }
 
-function StationSheet({ station, onClose }) {
+function StationSheet({ station, checklist, onToggleChecklist, onClose }) {
   return (
     <Sheet onClose={onClose} title={station.name} eyebrow={`Ответственный: ${station.owner}`}>
       <p className="rounded-3xl bg-slate-50 p-4 text-base font-bold leading-snug text-slate-800">{station.description}</p>
       <div className="mt-4 grid gap-3">
-        <ProcessBlock title="До сервиса" items={station.setup} />
-        <ProcessBlock title="Во время сервиса" items={station.service} />
-        <ProcessBlock title="Закрытие" items={station.close} />
+        <StationChecklistBlock title="До сервиса" stationId={station.id} phase="setup" items={checklist.setup} onToggle={onToggleChecklist} />
+        <StationChecklistBlock title="Во время сервиса" stationId={station.id} phase="service" items={checklist.service} onToggle={onToggleChecklist} />
+        <StationChecklistBlock title="Закрытие" stationId={station.id} phase="close" items={checklist.close} onToggle={onToggleChecklist} />
         <ProcessBlock title="Что делает цех" items={station.duties} />
         <ProcessBlock title="Нельзя" items={station.mistakes} danger />
       </div>
@@ -846,6 +912,62 @@ function ActivityLog({ activity }) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ChecklistOverview({ stationChecklists, setSelectedStation }) {
+  return (
+    <section>
+      <SectionHead title="Картина чек-листов" badge="по цехам" />
+      <div className="space-y-3">
+        {stationGuides.map((station) => {
+          const progress = getStationProgress(stationChecklists[station.id]);
+          return (
+            <button key={station.id} onClick={() => setSelectedStation(station)} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${progress.done === progress.total ? "bg-green-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                <ListChecks size={24} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-black text-slate-950">{station.name}</span>
+                <span className="text-sm font-semibold text-slate-500">{station.owner} · {formatProgress(progress)}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ChecklistRow({ item, meta, onClick }) {
+  return (
+    <button onClick={onClick} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
+      <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${item.done ? "bg-green-500 text-white" : "bg-slate-100 text-slate-600"}`}>
+        <Check size={24} strokeWidth={3} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={`block text-base font-black ${item.done ? "text-slate-400 line-through" : "text-slate-950"}`}>{item.title}</span>
+        {meta && <span className="text-sm font-semibold text-slate-500">{meta}</span>}
+      </span>
+    </button>
+  );
+}
+
+function StationChecklistBlock({ title, stationId, phase, items, onToggle }) {
+  const progress = getChecklistProgress(items);
+
+  return (
+    <div className="rounded-3xl bg-white p-3 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-base font-black text-slate-950">{title}</p>
+        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">{formatProgress(progress)}</span>
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <ChecklistRow key={item.id} item={item} onClick={() => onToggle(stationId, phase, item.id)} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -922,6 +1044,30 @@ function ProcessBlock({ title, items, danger }) {
       </ul>
     </div>
   );
+}
+
+function makeChecklist(items, prefix) {
+  return items.map((title, index) => ({
+    id: `${prefix}-${index + 1}`,
+    title,
+    done: index === 0,
+  }));
+}
+
+function getChecklistProgress(items) {
+  return {
+    done: items.filter((item) => item.done).length,
+    total: items.length,
+  };
+}
+
+function getStationProgress(stationChecklist) {
+  const allItems = Object.values(stationChecklist ?? {}).flat();
+  return getChecklistProgress(allItems);
+}
+
+function formatProgress(progress) {
+  return `${progress.done}/${progress.total}`;
 }
 
 function Toast({ message, onClose }) {

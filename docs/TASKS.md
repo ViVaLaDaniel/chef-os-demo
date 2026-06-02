@@ -11,6 +11,7 @@
 
 ## Frontend Integration
 
+- Persist general and station checklist completion to Supabase.
 - Replace local seed data with Supabase reads.
 - Add loading, empty, error, and offline states for every screen.
 - Persist inventory reports to `inventory_reports`.

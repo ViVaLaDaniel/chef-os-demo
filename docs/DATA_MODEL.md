@@ -36,6 +36,17 @@ Migration:
 - `activity_log`: audit trail.
 - `channel_messages`: kitchen chat messages.
 
+## Needed Next Schema Extension
+
+The frontend now models checklists in local state. The next database migration should add:
+
+- `checklist_templates`
+- `checklist_items`
+- `shift_checklist_runs`
+- `shift_checklist_item_results`
+
+These should support both general shift checklists and station/process checklists.
+
 ## Stock Signal Rule
 
 Cooks should not directly mutate final inventory truth.

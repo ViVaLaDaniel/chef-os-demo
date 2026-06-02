@@ -3,6 +3,7 @@
 ## Completed
 
 - Added canonical interaction logic documentation.
+- Added general and station/process checklist requirement to product logic.
 - Added professional kitchen workflow notes with source links.
 - Added current cook profile behavior.
 - Added personal cook instruction.

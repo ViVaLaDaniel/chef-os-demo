@@ -26,6 +26,23 @@ The product should reflect this model:
 - `Цеха`: who does what and how the station should operate.
 - `Чат`: short coordination messages.
 
+## Checklist Model
+
+Chef OS needs two checklist levels:
+
+- General shift checklist: shared by the whole kitchen and visible to chef/sous-chef as the top-level readiness picture.
+- Station process checklists: separate checklists for each station and each phase of work.
+
+Station process checklist phases:
+
+- before service;
+- during service;
+- close-down.
+
+Every checklist item must be tappable, show completion state, and write to activity history when completed or reopened.
+
+The chef/sous-chef needs an overview of every station checklist, not only individual station screens.
+
 Supporting research notes live in:
 
 - `docs/PROFESSIONAL_KITCHEN_NOTES.md`
@@ -78,6 +95,7 @@ When a cook is assigned to a station:
    - product empty;
    - need sous-chef;
    - photo/problem.
+7. It lets the cook complete station checklist items for setup, service, and close-down.
 
 ## Button Behavior Rules
 
