@@ -37,11 +37,20 @@ const tabs = [
 ];
 
 const staff = [
-  { id: 1, name: "Олег", role: "Су-шеф", station: "Pass", time: "09:00-18:00", status: "На смене", phone: "+48123123123", avatar: "О" },
-  { id: 2, name: "Ирина", role: "Повар", station: "Холодный цех", time: "11:00-22:00", status: "На смене", phone: "+48123123124", avatar: "И" },
-  { id: 3, name: "Матеуш", role: "Повар", station: "Горячий цех", time: "12:00-23:00", status: "Ожидается", phone: "+48123123125", avatar: "М" },
-  { id: 4, name: "Саша", role: "Повар", station: "Заготовочный", time: "08:00-16:00", status: "На смене", phone: "+48123123126", avatar: "С" },
-  { id: 5, name: "Ника", role: "Повар", station: "Суши", time: "14:00-23:00", status: "Ожидается", phone: "+48123123127", avatar: "Н" },
+  { id: 1, name: "Олег", role: "Су-шеф", station: "Pass", stationId: "pass", time: "09:00-18:00", status: "На смене", phone: "+48123123123", avatar: "О", instruction: "Держать pass, подтверждать стоп-лист, снимать блокеры цехов до пика." },
+  { id: 2, name: "Ирина", role: "Повар", station: "Холодный цех", stationId: "cold", time: "11:00-22:00", status: "На смене", phone: "+48123123124", avatar: "И", instruction: "Твой фокус: тартар, салаты, холодная подача. Проверяй рыбу, соусы, аллергены и чистоту доски перед каждым блоком." },
+  { id: 3, name: "Матеуш", role: "Повар", station: "Горячий цех", stationId: "hot", time: "12:00-23:00", status: "Ожидается", phone: "+48123123125", avatar: "М", instruction: "Подготовить линию к 17:30, держать термощуп рядом, согласовывать отдачу с pass." },
+  { id: 4, name: "Саша", role: "Повар", station: "Заготовочный", stationId: "prep", time: "08:00-16:00", status: "На смене", phone: "+48123123126", avatar: "С", instruction: "Маркировать контейнеры сразу после заготовки, сигналить остатки ниже нормы, не оставлять продукт без даты." },
+  { id: 5, name: "Ника", role: "Повар", station: "Суши", stationId: "sushi", time: "14:00-23:00", status: "Ожидается", phone: "+48123123127", avatar: "Н", instruction: "Проверить рис, нори, соевый соус и чистый нож. Любой вопрос по рыбе сразу в pass." },
+];
+
+const currentCook = staff[1];
+
+const universalInstructions = [
+  "Мой руки перед стартом, после сырого продукта, телефона, мусора и перчаток.",
+  "Аллергены держи отдельно: доска, нож, соус, контейнер и ложка не смешиваются.",
+  "Нет устных изменений ТТК: если не хватает продукта, ставь сигнал и жди подтверждение су-шефа.",
+  "Любой риск по температуре, запаху, сроку или упаковке сразу в стоп-сигнал.",
 ];
 
 const stationGuides = [
@@ -53,6 +62,9 @@ const stationGuides = [
     description: "Салаты, тартары, холодные закуски, заготовки для подачи без горячей линии.",
     duties: ["Проверить зелень и соусы", "Поддерживать чистую доску", "Обновлять фото эталона подачи"],
     mistakes: ["Не смешивать аллергенные соусы", "Не держать рыбу вне холода дольше 10 минут"],
+    setup: ["Проверить температуру холодильника", "Разложить ножи, доски, перчатки", "Сверить стоп-лист по рыбе"],
+    service: ["Готовить тартар только перед отдачей", "Проверять фото эталона", "Сигналить pass при нехватке продукта"],
+    close: ["Промаркировать остатки", "Списать спорный продукт", "Передать заметки су-шефу"],
   },
   {
     id: "hot",
@@ -62,6 +74,9 @@ const stationGuides = [
     description: "Основные блюда, термообработка, гарниры, контроль температуры подачи.",
     duties: ["Разогреть линию к 17:30", "Проверить термощуп", "Подготовить гарниры на пик"],
     mistakes: ["Не отдавать блюдо без проверки pass", "Не смешивать щипцы сырого и готового продукта"],
+    setup: ["Включить линию и проверить сковороды", "Проверить термощуп", "Разложить гарниры по порциям"],
+    service: ["Работать партиями, не забивать плиту", "Температуру спорного блюда проверять до pass", "Срочные задержки сообщать сразу"],
+    close: ["Охладить заготовки по правилу кухни", "Закрыть газ/индукцию", "Отметить остатки масла и гарниров"],
   },
   {
     id: "prep",
@@ -71,6 +86,9 @@ const stationGuides = [
     description: "Mise en place, нарезки, маринады, полуфабрикаты и маркировка сроков.",
     duties: ["Промаркировать контейнеры", "Сверить план заготовок", "Отметить остатки ниже нормы"],
     mistakes: ["Не оставлять контейнеры без даты", "Не принимать продукт без температуры"],
+    setup: ["Сверить план заготовок", "Подготовить чистые контейнеры и этикетки", "Проверить сырье на приемке"],
+    service: ["Пополнять линии без хаоса", "Держать FIFO", "Сигналить низкие остатки до нуля"],
+    close: ["Пересчитать критичные остатки", "Закрыть маркировку", "Передать список на закупку"],
   },
   {
     id: "pass",
@@ -80,6 +98,21 @@ const stationGuides = [
     description: "Контроль финальной подачи, стоп-лист, коммуникация зала и кухни.",
     duties: ["Подтвердить стоп-лист", "Сверить VIP-заметки", "Ускорять конфликтные заказы"],
     mistakes: ["Не менять ТТК устно", "Не отдавать блюдо без финального контроля"],
+    setup: ["Сверить VIP и аллергены", "Обновить стоп-лист", "Провести короткий бриф"],
+    service: ["Принимать сигналы цехов", "Решать очередность отдачи", "Не выпускать спорную тарелку"],
+    close: ["Закрыть журнал проблем", "Собрать handover", "Подтвердить закупочные заявки"],
+  },
+  {
+    id: "sushi",
+    name: "Суши",
+    owner: "Ника",
+    status: "Ожидается",
+    description: "Рис, нори, рыба, роллы, сашими, соусы и контроль чистого холодного процесса.",
+    duties: ["Проверить рис и нори", "Держать отдельный нож", "Сигналить остатки соевого соуса"],
+    mistakes: ["Не использовать спорную рыбу", "Не смешивать доски после сырого продукта"],
+    setup: ["Проверить рис и уксус", "Подготовить чистый нож", "Сверить рыбу со стоп-листом"],
+    service: ["Держать порции ровно", "Сразу убирать сырой продукт", "Любой запах/цвет сообщать pass"],
+    close: ["Списать остатки по правилам", "Промыть и высушить коврики", "Отметить соусы и нори"],
   },
 ];
 
@@ -161,7 +194,10 @@ function App() {
   const [recipeFilter, setRecipeFilter] = React.useState("Все");
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
   const [selectedStation, setSelectedStation] = React.useState(null);
+  const [selectedStop, setSelectedStop] = React.useState(null);
   const [staffOpen, setStaffOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
   const [quickPanelOpen, setQuickPanelOpen] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [session, setSession] = React.useState(null);
@@ -210,9 +246,21 @@ function App() {
 
   function reportInventory(item, level) {
     const action = `${item.name}: ${level}`;
-    setInventoryReports((current) => [{ id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier }, ...current]);
+    setInventoryReports((current) => [{ id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier, status: "Новая" }, ...current]);
     addActivity(action, item.station, level === "закончилось" ? "red" : "amber", "Повар");
     setToast(`Сигнал отправлен су-шефу: ${item.name}`);
+  }
+
+  function confirmInventoryReport(report) {
+    setInventoryReports((current) => current.map((item) => (item.id === report.id ? { ...item, status: "Подтверждена" } : item)));
+    addActivity(`Подтвердил заявку: ${report.item}`, report.station, "green", "Су-шеф");
+    setToast(`Заявка подтверждена: ${report.item}`);
+  }
+
+  function handleQuickAction(action) {
+    addActivity(action, screenTitle, action.includes("стоп") || action.includes("закончился") ? "red" : "amber");
+    setToast(`Выполнено: ${action}`);
+    setQuickPanelOpen(false);
   }
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -230,10 +278,10 @@ function App() {
 
   return (
     <main className="min-h-screen px-3 py-3 text-slate-900 sm:px-6">
-      <section className="relative mx-auto flex min-h-[calc(100vh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft lg:max-w-5xl">
+      <section className="relative mx-auto flex h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft lg:max-w-5xl">
         <StatusBar />
-        <AppHeader title={screenTitle} activeTab={activeTab} />
-        <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2 lg:px-6">
+        <AppHeader title={screenTitle} activeTab={activeTab} onNotifications={() => setNotificationsOpen(true)} onProfile={() => setProfileOpen(true)} />
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
           <AuthStatus session={session} loading={authLoading} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
             <ShiftScreen
@@ -242,6 +290,8 @@ function App() {
               activity={activity}
               addActivity={addActivity}
               setStaffOpen={setStaffOpen}
+              setSelectedStop={setSelectedStop}
+              setSelectedStation={setSelectedStation}
               setToast={setToast}
             />
           )}
@@ -255,15 +305,18 @@ function App() {
               setSelectedRecipe={setSelectedRecipe}
             />
           )}
-          {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} />}
+          {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
           {activeTab === "stations" && <StationsScreen setSelectedStation={setSelectedStation} />}
           {activeTab === "chat" && <Chat />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
+        {profileOpen && <ProfileSheet cook={currentCook} onClose={() => setProfileOpen(false)} setSelectedStation={setSelectedStation} />}
+        {notificationsOpen && <NotificationsSheet activity={activity} onClose={() => setNotificationsOpen(false)} />}
+        {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
         {selectedStation && <StationSheet station={selectedStation} onClose={() => setSelectedStation(null)} />}
-        {quickPanelOpen && <QuickPanel activeTab={activeTab} onClose={() => setQuickPanelOpen(false)} />}
+        {quickPanelOpen && <QuickPanel activeTab={activeTab} onClose={() => setQuickPanelOpen(false)} onAction={handleQuickAction} />}
         <Fab activeTab={activeTab} onClick={() => setQuickPanelOpen(true)} />
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </section>
@@ -303,7 +356,7 @@ function StatusBar() {
   );
 }
 
-function AppHeader({ title, activeTab }) {
+function AppHeader({ title, activeTab, onNotifications, onProfile }) {
   return (
     <header className="px-4 pb-3 pt-2 lg:px-6">
       <div className="flex items-center justify-between gap-3">
@@ -312,20 +365,20 @@ function AppHeader({ title, activeTab }) {
           <h1 className="truncate text-3xl font-black leading-tight tracking-normal text-slate-950">{title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button className="grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Уведомления">
+          <button onClick={onNotifications} className="grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Уведомления">
             <Bell size={21} />
           </button>
-          <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">
-            Д
+          <button onClick={onProfile} className="relative grid h-12 w-12 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white" aria-label="Профиль повара">
+            {currentCook.avatar}
             <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-slate-50 bg-green-500" />
-          </div>
+          </button>
         </div>
       </div>
     </header>
   );
 }
 
-function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, setToast }) {
+function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
   const openTasks = tasks.filter((task) => !task.done).length;
 
   function toggleTask(task) {
@@ -338,6 +391,19 @@ function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, set
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
       <div className="space-y-5">
+        <section className="rounded-3xl bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <button onClick={() => setSelectedStation(stationGuides.find((station) => station.id === currentCook.stationId))} className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-amber-500 text-lg font-black text-white" aria-label="Открыть мою станцию">
+              {currentCook.avatar}
+            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-amber-600">Моя станция · {currentCook.station}</p>
+              <p className="text-xl font-black text-slate-950">{currentCook.name}</p>
+              <p className="mt-1 text-sm font-bold leading-snug text-slate-600">{currentCook.instruction}</p>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-3xl bg-slate-900 p-4 text-white shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
@@ -359,7 +425,7 @@ function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, set
           <SectionHead title="Критично сейчас" badge={`${stopList.length} стоп`} />
           <div className="space-y-3">
             {stopList.map((item) => (
-              <article key={item.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-red-50 p-3 text-left shadow-sm">
+              <button key={item.id} onClick={() => setSelectedStop(item)} className="flex min-h-20 w-full items-center gap-3 rounded-3xl bg-red-50 p-3 text-left shadow-sm">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-red-500 text-white">
                   <AlertTriangle size={24} />
                 </span>
@@ -367,7 +433,7 @@ function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, set
                   <p className="text-base font-black text-red-950">{item.item}</p>
                   <p className="text-sm font-bold text-red-700">{item.reason} · {item.station}</p>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </section>
@@ -392,10 +458,17 @@ function ShiftScreen({ tasks, setTasks, activity, addActivity, setStaffOpen, set
 
       <div className="space-y-5">
         <section>
-          <SectionHead title="Быстрые сигналы" />
+          <SectionHead title="Быстрые сигналы" badge="1 касание" />
           <div className="grid grid-cols-2 gap-3">
             {["Закончился продукт", "Осталась 1 банка", "Нужен су-шеф", "Фото проблемы"].map((label) => (
-              <button key={label} onClick={() => setToast(`Сигнал создан: ${label}`)} className="flex min-h-20 flex-col justify-between rounded-3xl bg-white p-4 text-left shadow-sm">
+              <button
+                key={label}
+                onClick={() => {
+                  addActivity(`Быстрый сигнал: ${label}`, currentCook.station, label.includes("Закончился") ? "red" : "amber", currentCook.name);
+                  setToast(`Сигнал создан: ${label}`);
+                }}
+                className="flex min-h-20 flex-col justify-between rounded-3xl bg-white p-4 text-left shadow-sm"
+              >
                 <Sparkles className="text-amber-500" size={24} />
                 <span className="text-sm font-black text-slate-950">{label}</span>
               </button>
@@ -418,7 +491,7 @@ function ShiftMetric({ label, value, danger, onClick }) {
   );
 }
 
-function InventoryScreen({ reports, onReport }) {
+function InventoryScreen({ reports, onReport, onConfirm }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_0.85fr]">
       <section className="space-y-3">
@@ -457,8 +530,16 @@ function InventoryScreen({ reports, onReport }) {
           )}
           {reports.map((report) => (
             <article key={report.id} className="rounded-3xl bg-amber-50 p-4 shadow-sm">
-              <p className="text-base font-black text-amber-950">{report.item}: {report.level}</p>
-              <p className="text-sm font-bold text-amber-700">{report.station} · {report.supplier}</p>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-base font-black text-amber-950">{report.item}: {report.level}</p>
+                  <p className="text-sm font-bold text-amber-700">{report.station} · {report.supplier}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-black ${report.status === "Подтверждена" ? "bg-green-500 text-white" : "bg-amber-500 text-white"}`}>{report.status}</span>
+              </div>
+              <button onClick={() => onConfirm(report)} disabled={report.status === "Подтверждена"} className="min-h-12 w-full rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-green-500">
+                {report.status === "Подтверждена" ? "Подтверждено" : "Подтвердить су-шефом"}
+              </button>
             </article>
           ))}
         </div>
@@ -468,21 +549,49 @@ function InventoryScreen({ reports, onReport }) {
 }
 
 function StationsScreen({ setSelectedStation }) {
+  const myStation = stationGuides.find((station) => station.id === currentCook.stationId);
+
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      {stationGuides.map((station) => (
-        <button key={station.id} onClick={() => setSelectedStation(station)} className="min-h-36 rounded-3xl bg-white p-4 text-left shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700">
-              <ChefHat size={25} />
-            </span>
-            <span className={`rounded-full px-3 py-1 text-xs font-black text-white ${station.status === "Ожидается" ? "bg-amber-500" : "bg-green-500"}`}>{station.status}</span>
-          </div>
-          <p className="text-xl font-black text-slate-950">{station.name}</p>
-          <p className="mt-1 text-sm font-bold text-slate-500">Ответственный: {station.owner}</p>
-          <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-600">{station.description}</p>
+    <div className="space-y-5">
+      <section className="rounded-3xl bg-slate-900 p-4 text-white shadow-sm">
+        <p className="text-sm font-bold text-slate-300">Текущий профиль</p>
+        <p className="text-2xl font-black">{currentCook.name} · {currentCook.station}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-200">{currentCook.instruction}</p>
+        <button onClick={() => setSelectedStation(myStation)} className="mt-4 min-h-12 w-full rounded-2xl bg-amber-500 px-4 text-sm font-black text-white">
+          Открыть инструкцию станции
         </button>
-      ))}
+      </section>
+
+      <section>
+        <SectionHead title="Инструкция для всех" />
+        <div className="space-y-2">
+          {universalInstructions.map((instruction) => (
+            <div key={instruction} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm">
+              <ShieldCheck className="mt-0.5 shrink-0 text-green-500" size={20} />
+              <p className="text-sm font-bold leading-snug text-slate-800">{instruction}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <SectionHead title="Все цеха и процессы" />
+        <div className="grid gap-3 lg:grid-cols-2">
+          {stationGuides.map((station) => (
+            <button key={station.id} onClick={() => setSelectedStation(station)} className="min-h-36 rounded-3xl bg-white p-4 text-left shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700">
+                  <ChefHat size={25} />
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-black text-white ${station.status === "Ожидается" ? "bg-amber-500" : "bg-green-500"}`}>{station.status}</span>
+              </div>
+              <p className="text-xl font-black text-slate-950">{station.name}</p>
+              <p className="mt-1 text-sm font-bold text-slate-500">Ответственный: {station.owner}</p>
+              <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-600">{station.description}</p>
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -585,6 +694,76 @@ function StaffSheet({ onClose, setToast }) {
   );
 }
 
+function ProfileSheet({ cook, onClose, setSelectedStation }) {
+  const station = stationGuides.find((item) => item.id === cook.stationId);
+
+  return (
+    <Sheet onClose={onClose} title={cook.name} eyebrow={`${cook.role} · ${cook.station}`}>
+      <div className="space-y-4">
+        <div className="rounded-3xl bg-slate-900 p-4 text-white">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="grid h-16 w-16 place-items-center rounded-3xl bg-amber-500 text-2xl font-black">{cook.avatar}</span>
+            <div>
+              <p className="text-sm font-bold text-slate-300">Сегодня</p>
+              <p className="text-xl font-black">{cook.time}</p>
+            </div>
+          </div>
+          <p className="text-sm font-semibold leading-snug text-slate-100">{cook.instruction}</p>
+        </div>
+
+        <section>
+          <SectionHead title="Личная инструкция" />
+          <div className="space-y-2">
+            {["Проверь свою станцию до пика", "Сигналь остатки до полного нуля", "Открывай ТТК перед спорной отдачей"].map((item) => (
+              <div key={item} className="flex gap-3 rounded-2xl bg-amber-50 p-3">
+                <Check className="mt-0.5 shrink-0 text-amber-600" size={20} />
+                <p className="text-sm font-bold text-slate-800">{item}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <button onClick={() => setSelectedStation(station)} className="min-h-14 w-full rounded-2xl bg-slate-900 px-4 text-base font-black text-white">
+          Открыть процессы моей станции
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+function NotificationsSheet({ activity, onClose }) {
+  return (
+    <Sheet onClose={onClose} title="Уведомления" eyebrow="Смена сейчас">
+      <div className="space-y-3">
+        {activity.slice(0, 6).map((event) => (
+          <article key={event.id} className="rounded-3xl bg-slate-50 p-4">
+            <p className="text-base font-black text-slate-950">{event.action}</p>
+            <p className="mt-1 text-sm font-bold text-slate-500">{event.actor} · {event.meta} · {event.time}</p>
+          </article>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function StopSheet({ item, onClose }) {
+  return (
+    <Sheet onClose={onClose} title={item.item} eyebrow="Стоп-лист">
+      <div className="space-y-3">
+        <div className="rounded-3xl bg-red-50 p-4">
+          <p className="text-sm font-black text-red-700">Причина</p>
+          <p className="mt-1 text-lg font-black text-red-950">{item.reason}</p>
+          <p className="mt-2 text-sm font-bold text-red-700">Цех: {item.station}</p>
+        </div>
+        <div className="rounded-3xl bg-slate-50 p-4">
+          <p className="text-sm font-black text-slate-500">Что делать повару</p>
+          <p className="mt-1 text-base font-bold leading-snug text-slate-900">Не отдавать блюдо и не обещать замену гостю. Сигнал уходит су-шефу/pass, решение подтверждает только ответственный.</p>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
 function RecipeSheet({ recipe, onClose }) {
   return (
     <Sheet onClose={onClose} title={recipe.title} eyebrow={recipe.category}>
@@ -616,6 +795,9 @@ function StationSheet({ station, onClose }) {
     <Sheet onClose={onClose} title={station.name} eyebrow={`Ответственный: ${station.owner}`}>
       <p className="rounded-3xl bg-slate-50 p-4 text-base font-bold leading-snug text-slate-800">{station.description}</p>
       <div className="mt-4 grid gap-3">
+        <ProcessBlock title="До сервиса" items={station.setup} />
+        <ProcessBlock title="Во время сервиса" items={station.service} />
+        <ProcessBlock title="Закрытие" items={station.close} />
         <ProcessBlock title="Что делает цех" items={station.duties} />
         <ProcessBlock title="Нельзя" items={station.mistakes} danger />
       </div>
@@ -623,7 +805,7 @@ function StationSheet({ station, onClose }) {
   );
 }
 
-function QuickPanel({ activeTab, onClose }) {
+function QuickPanel({ activeTab, onClose, onAction }) {
   const actions = {
     shift: ["Создать задачу", "Обновить стоп-лист", "Открыть брифинг"],
     recipes: ["Новая ТТК", "Фото эталона", "Расчет фудкоста"],
@@ -636,7 +818,7 @@ function QuickPanel({ activeTab, onClose }) {
     <Sheet onClose={onClose} title="Быстрое действие">
       <div className="space-y-2">
         {actions.map((action) => (
-          <button key={action} onClick={onClose} className="flex min-h-14 w-full items-center justify-between rounded-2xl bg-slate-50 px-4 text-left text-base font-black text-slate-900">
+          <button key={action} onClick={() => onAction(action)} className="flex min-h-14 w-full items-center justify-between rounded-2xl bg-slate-50 px-4 text-left text-base font-black text-slate-900">
             {action}
             {action.includes("фото") || action.includes("Фото") ? <Camera className="text-amber-500" size={22} /> : <Plus className="text-amber-500" size={22} />}
           </button>

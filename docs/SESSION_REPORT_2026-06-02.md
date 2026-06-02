@@ -38,3 +38,7 @@
 - Do not touch `dsgvo-scanner` Supabase for Chef OS.
 - Do not run local Supabase Docker without confirming Docker state first.
 - No secrets were committed.
+
+## Later UX Logic Iteration
+
+See `docs/SESSION_REPORT_2026-06-02_UX_LOGIC.md` for the later station/profile/process interaction pass.

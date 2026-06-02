@@ -1,0 +1,115 @@
+# Interaction Logic
+
+Chef OS must behave like a service-time kitchen tool, not a decorative dashboard.
+
+## Operating Principles
+
+- One screen should answer one operational question.
+- A cook must never need to type a long report during service.
+- Every visible button must either change state, open a sheet, create a signal, start a call, send a message, or explain why it is unavailable.
+- Cooks signal facts; chef/sous-chef confirms operational truth.
+- Bottom navigation stays fixed at the bottom and content always has enough safe padding so it does not hide behind the menu.
+
+## Kitchen Workflow Model
+
+Professional kitchen work is station-based:
+
+- Pre-service: mise en place, stock check, station setup, recipe/process review.
+- Service: execute station tasks, react to orders, signal issues, ask for help, follow pass/chef direction.
+- Post-service: close tasks, record issues, update stock, clean station, hand over notes.
+
+The product should reflect this model:
+
+- `Смена`: what is urgent now.
+- `ТТК`: what/how to cook.
+- `Склад`: what is missing or low.
+- `Цеха`: who does what and how the station should operate.
+- `Чат`: short coordination messages.
+
+Supporting research notes live in:
+
+- `docs/PROFESSIONAL_KITCHEN_NOTES.md`
+
+## Role Logic
+
+### Chef
+
+- sees all stations, people, stop-list, activity, stock signals;
+- can create/approve stop-list, tasks, recipes, processes, supplier actions;
+- sees audit history.
+
+### Sous-chef
+
+- runs shift execution;
+- confirms cook stock signals;
+- follows up on station blockers;
+- calls staff/suppliers.
+
+### Cook
+
+- sees own profile and current station;
+- sees personal instruction for today;
+- sees common station instructions;
+- marks tasks done;
+- sends quick stock/problem signals;
+- opens recipes/processes without needing to ask.
+
+### Purchaser
+
+- sees confirmed inventory signals;
+- turns them into supplier orders.
+
+## Cook Station Flow
+
+When a cook is assigned to a station:
+
+1. The app shows their profile: name, role, station, shift time.
+2. It shows their personal instruction for the shift.
+3. It shows universal instructions for all staff.
+4. It shows station process blocks:
+   - setup;
+   - during service;
+   - safety;
+   - close-down.
+5. It shows station-specific recipes and stock items.
+6. It lets the cook signal:
+   - product low;
+   - one unit left;
+   - product empty;
+   - need sous-chef;
+   - photo/problem.
+
+## Button Behavior Rules
+
+- Bell opens notifications.
+- Avatar opens cook profile.
+- People metric opens staff list with calls.
+- Task buttons toggle completion and write activity.
+- Stop-list cards open details.
+- Quick signal buttons create visible signals and activity.
+- Stock buttons create inventory reports.
+- Station cards open station instruction sheet.
+- Recipe cards open recipe sheet.
+- Chat send adds a message.
+- FAB opens context actions, and each action creates feedback/activity.
+- Close buttons close their sheet/toast.
+- Google button either starts OAuth or explains that Supabase env is missing.
+
+## Mobile Layout Rules
+
+- Touch targets are at least 48px.
+- Bottom navigation is fixed inside the phone shell.
+- Scroll content must use bottom padding larger than nav height.
+- FAB must sit above navigation and not cover list actions.
+- Sheets must leave enough top room and be scrollable.
+- Critical actions use red, active/in-progress amber, complete green.
+
+## Safety And Simplicity
+
+The app is not a food-safety certification system yet, but station instructions should include:
+
+- handwashing/hygiene reminder;
+- allergen separation;
+- time/temperature awareness;
+- clean tools and cross-contamination prevention;
+- labeling/date discipline.

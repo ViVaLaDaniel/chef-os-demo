@@ -36,6 +36,14 @@ Data must sync by authenticated account:
 - app loads current shift, recipes, stations, staff, inventory, reports, messages, and activity log;
 - mobile clients cache critical data locally and sync queued actions when online.
 
+## Interaction Model
+
+The canonical interaction model is documented in:
+
+- `docs/INTERACTION_LOGIC.md`
+
+Future UI work should start there before changing screens. The app must preserve the station-based kitchen workflow: cook profile, personal instruction, universal instructions, station process, quick signals, and activity history.
+
 ## Auth Boundary
 
 Supabase Auth is the intended identity provider. Google OAuth must be configured in Supabase Dashboard and Google Cloud.
