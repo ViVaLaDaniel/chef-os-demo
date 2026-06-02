@@ -157,6 +157,14 @@ Every quick action should have:
 - Sheets must leave enough top room and be scrollable.
 - Critical actions use red, active/in-progress amber, complete green.
 
+## Time And Schedule Logic
+
+- The top status area should show real device time.
+- Next to the time, show countdown to shift end.
+- Under the page title, show date and shift window.
+- The shift screen should show a week schedule strip so cooks understand today and upcoming workload.
+- Later, shift time and schedule data must come from Supabase, not hardcoded demo data.
+
 ## Safety And Simplicity
 
 The app is not a food-safety certification system yet, but station instructions should include:

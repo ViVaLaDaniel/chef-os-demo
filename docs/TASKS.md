@@ -3,6 +3,7 @@
 ## Immediate
 
 - Keep `docs/INTERACTION_LOGIC.md` aligned with UI behavior.
+- Keep `docs/PRODUCT_COMPLETION_CHECKLIST.md` updated after every product iteration.
 - Choose or create a dedicated Supabase project for Chef OS.
 - Configure Google OAuth in Supabase and Google Cloud.
 - Add Supabase env vars to Vercel.

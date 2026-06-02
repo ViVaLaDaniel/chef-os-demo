@@ -47,6 +47,7 @@ vercel deploy --prod --yes
 - `docs/INTERACTION_LOGIC.md`
 - `docs/PROFESSIONAL_KITCHEN_NOTES.md`
 - `docs/QUICK_ACTIONS.md`
+- `docs/PRODUCT_COMPLETION_CHECKLIST.md`
 - `docs/RUNBOOK.md`
 - `docs/TASKS.md`
 - `docs/DECISIONS.md`

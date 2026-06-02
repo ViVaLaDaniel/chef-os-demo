@@ -46,6 +46,22 @@ const staff = [
 
 const currentCook = staff[1];
 
+const currentShift = {
+  title: "Вечерняя смена",
+  date: "2026-06-03",
+  startsAt: "11:00",
+  endsAt: "22:00",
+  peakWindow: "18:30-21:00",
+};
+
+const scheduleDays = [
+  { id: "today", day: "Ср", date: "03", load: "Пик", cooks: 5, active: true },
+  { id: "thu", day: "Чт", date: "04", load: "Банкет", cooks: 7 },
+  { id: "fri", day: "Пт", date: "05", load: "Пик", cooks: 8 },
+  { id: "sat", day: "Сб", date: "06", load: "Полная", cooks: 9 },
+  { id: "sun", day: "Вс", date: "07", load: "Тише", cooks: 4 },
+];
+
 const universalInstructions = [
   "Мой руки перед стартом, после сырого продукта, телефона, мусора и перчаток.",
   "Аллергены держи отдельно: доска, нож, соус, контейнер и ложка не смешиваются.",
@@ -444,9 +460,17 @@ function AuthStatus({ session, loading, onSignIn, onSignOut }) {
 }
 
 function StatusBar() {
+  const now = useNow();
+  const remaining = getShiftRemaining(now, currentShift.endsAt);
+
   return (
-    <div className="flex h-9 items-center justify-between px-6 pt-2 text-[13px] font-black text-slate-900">
-      <span>10:30</span>
+    <div className="flex min-h-10 items-center justify-between gap-3 px-6 pt-2 text-[13px] font-black text-slate-900">
+      <div className="flex min-w-0 items-center gap-2">
+        <span>{formatTime(now)}</span>
+        <span className={`rounded-full px-2 py-1 text-[11px] font-black ${remaining.expired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+          {remaining.expired ? "смена закончилась" : `до конца ${remaining.label}`}
+        </span>
+      </div>
       <div className="flex items-center gap-1.5">
         <div className="h-3 w-4 rounded-sm border-2 border-slate-900" />
         <div className="h-3 w-5 rounded-sm bg-slate-900" />
@@ -456,12 +480,15 @@ function StatusBar() {
 }
 
 function AppHeader({ title, activeTab, onNotifications, onProfile }) {
+  const now = useNow();
+
   return (
     <header className="px-4 pb-3 pt-2 lg:px-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wide text-amber-600">{activeTab === "shift" ? "Chef OS" : "Kitchen Command"}</p>
           <h1 className="truncate text-3xl font-black leading-tight tracking-normal text-slate-950">{title}</h1>
+          <p className="mt-1 text-sm font-bold text-slate-500">{formatDate(now)} · {currentShift.title} {currentShift.startsAt}-{currentShift.endsAt}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onNotifications} className="grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Уведомления">
@@ -490,6 +517,8 @@ function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, tog
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
       <div className="space-y-5">
+        <ScheduleStrip setStaffOpen={setStaffOpen} />
+
         <section className="rounded-3xl bg-white p-4 shadow-sm">
           <div className="flex items-start gap-3">
             <button onClick={() => setSelectedStation(stationGuides.find((station) => station.id === currentCook.stationId))} className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-amber-500 text-lg font-black text-white" aria-label="Открыть мою станцию">
@@ -507,7 +536,7 @@ function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, tog
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-bold text-slate-300">Пик смены</p>
-              <p className="text-2xl font-black">18:30-21:00</p>
+              <p className="text-2xl font-black">{currentShift.peakWindow}</p>
             </div>
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500 text-white">
               <Flame size={28} />
@@ -1003,6 +1032,33 @@ function ChecklistOverview({ stationChecklists, setSelectedStation }) {
   );
 }
 
+function ScheduleStrip({ setStaffOpen }) {
+  return (
+    <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-amber-600">График</p>
+          <h2 className="text-xl font-black text-slate-950">Неделя кухни</h2>
+        </div>
+        <button onClick={() => setStaffOpen(true)} className="min-h-12 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white">
+          Люди
+        </button>
+      </div>
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+        {scheduleDays.map((day) => (
+          <button key={day.id} onClick={() => setStaffOpen(true)} className={`flex h-24 min-w-20 shrink-0 flex-col justify-between rounded-2xl p-3 text-left ${day.active ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-800"}`}>
+            <span className="text-xs font-black">{day.day}</span>
+            <span className="text-2xl font-black">{day.date}</span>
+            <span className={`rounded-full px-2 py-1 text-center text-[11px] font-black ${day.active ? "bg-white/20 text-white" : "bg-white text-slate-600"}`}>
+              {day.cooks} · {day.load}
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ChecklistRow({ item, meta, onClick }) {
   return (
     <button onClick={onClick} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
@@ -1132,6 +1188,52 @@ function getStationProgress(stationChecklist) {
 
 function formatProgress(progress) {
   return `${progress.done}/${progress.total}`;
+}
+
+function useNow() {
+  const [now, setNow] = React.useState(() => new Date());
+
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return now;
+}
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDate(date) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    weekday: "short",
+    day: "2-digit",
+    month: "long",
+  }).format(date);
+}
+
+function getShiftRemaining(now, endsAt) {
+  const [hours, minutes] = endsAt.split(":").map(Number);
+  const end = new Date(now);
+  end.setHours(hours, minutes, 0, 0);
+  const diffMs = end.getTime() - now.getTime();
+
+  if (diffMs <= 0) {
+    return { expired: true, label: "0м" };
+  }
+
+  const totalMinutes = Math.ceil(diffMs / 60000);
+  const remainingHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+
+  return {
+    expired: false,
+    label: remainingHours > 0 ? `${remainingHours}ч ${remainingMinutes}м` : `${remainingMinutes}м`,
+  };
 }
 
 function Toast({ message, onClose }) {
