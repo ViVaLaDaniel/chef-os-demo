@@ -4,20 +4,16 @@
 
 - Keep `docs/INTERACTION_LOGIC.md` aligned with UI behavior.
 - Keep `docs/PRODUCT_COMPLETION_CHECKLIST.md` updated after every product iteration.
-- Confirm target: create dedicated Supabase project `chef-os-demo` or explicitly choose another non-DSGVO project.
-- Configure Google OAuth in Supabase and Google Cloud.
-- Add Supabase env vars to Vercel.
-- Apply and verify the migration on the confirmed Chef OS project.
-- Verify first Google login creates the restaurant workspace and owner membership through `bootstrap_demo_workspace()`.
+- Verify remote writes for inventory reports and chat against the production Supabase project.
 
 ## Frontend Integration
 
 - Persist general and station checklist completion to Supabase.
 - Replace remaining local seed data with Supabase reads.
 - Add loading, empty, error, and backend-sync states for every screen.
-- Verify inventory reports persist to `inventory_reports` after remote project setup.
-- Verify shift task completion persists to `shift_tasks` after remote project setup.
-- Verify chat messages persist to `channel_messages` after remote project setup.
+- Verify inventory reports persist to `inventory_reports` in production.
+- Verify shift task completion persists to `shift_tasks` in production. Completed on 2026-06-03 for `Принять рыбу и температуру`.
+- Verify chat messages persist to `channel_messages` in production.
 - Load station process guides from `stations` and `station_processes`.
 
 ## Roles

@@ -29,3 +29,15 @@ Reason: Docker Desktop may host DSGVO Scanner or other local resources. A previo
 Decision: keep Vite React as the shared codebase and later add PWA/Capacitor.
 
 Reason: this allows one product surface for desktop web, phone install, Android, and iOS while sharing the same backend.
+
+## 2026-06-03: Dedicated Cloud Demo Stack
+
+Decision: run the Chef OS demo on its own Google Cloud project and Supabase project.
+
+Reason: auth, billing, database, and OAuth settings must be isolated from DSGVO Scanner and other Daniel workspace projects.
+
+Current resources:
+
+- Google Cloud project: `chef-os-demo-20260603`
+- Supabase project ref: `zqkwfflhjuckjmxqqheh`
+- Production Vercel URL: `https://chef-os-demo.vercel.app`

@@ -58,7 +58,7 @@ Manual check:
 3. Reload the page.
 4. Confirm the local action is still visible.
 
-This is not a remote sync queue yet. Supabase writes still need a dedicated Chef OS Supabase project and explicit sync logic.
+This is not a remote sync queue yet. Supabase online writes are configured for selected actions, but offline replay still needs a dedicated sync queue.
 
 ## Git
 
@@ -91,12 +91,27 @@ curl.exe -I https://chef-os-demo.vercel.app
 
 ## Supabase
 
-Supabase migration exists locally, but do not apply it remotely until the target project is confirmed.
+Dedicated project:
+
+```text
+chef-os-demo
+ref: zqkwfflhjuckjmxqqheh
+url: https://zqkwfflhjuckjmxqqheh.supabase.co
+```
+
+Remote migrations have been applied to this project.
+
+Applied migrations:
+
+- `20260602191759`
+- `20260603093000`
+- `20260603100000`
 
 Safe inspection:
 
 ```bash
 supabase migration list --local
+supabase migration list --linked
 ```
 
 Avoid by default:
@@ -107,3 +122,21 @@ supabase db reset --local
 ```
 
 Reason: Docker Desktop may be used by other projects.
+
+Auth config:
+
+```bash
+$env:SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID = "<Google OAuth client id>"
+$env:SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET = "<Google OAuth client secret>"
+supabase config push --project-ref zqkwfflhjuckjmxqqheh --yes
+```
+
+Do not print or commit the Google OAuth secret.
+
+Production smoke test:
+
+1. Open `https://chef-os-demo.vercel.app`.
+2. Click `Google`.
+3. Sign in with the configured Google test account.
+4. Confirm the auth/status card shows `Supabase подключен`.
+5. Confirm the activity log contains `Создан demo workspace после Google входа` for a first login.

@@ -8,6 +8,8 @@ Mobile-first React demo for a professional kitchen operations app. The current p
 - Vite
 - Tailwind CSS
 - lucide-react
+- Supabase
+- Google OAuth
 
 ## Run
 
@@ -57,17 +59,18 @@ npm run build
 
 ## Supabase Setup
 
-The app is prepared for Supabase Auth and a shared database, but production credentials are not committed.
+The app is connected to a dedicated Chef OS Supabase project, but production credentials are not committed.
 
-1. Create or choose a Supabase project for Chef OS.
-2. Apply the migration in `supabase/migrations`.
-3. Enable Google as an Auth provider in Supabase Dashboard.
-4. Add the deployed Vercel URL to Supabase Auth redirect URLs.
-5. Set these Vercel environment variables:
+- Supabase ref: `zqkwfflhjuckjmxqqheh`
+- Supabase URL: `https://zqkwfflhjuckjmxqqheh.supabase.co`
+- Google Cloud project: `chef-os-demo-20260603`
+- Production URL: `https://chef-os-demo.vercel.app`
+
+Required Vercel environment variables:
 
 ```bash
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+VITE_SUPABASE_URL=https://zqkwfflhjuckjmxqqheh.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<stored in Vercel>
 ```
 
 The database model is tenant-based: every operational table is connected to `restaurants`, and access is controlled through `restaurant_members` roles and RLS.

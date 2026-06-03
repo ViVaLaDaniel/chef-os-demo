@@ -4,7 +4,13 @@
 
 Supabase client wiring exists, and the frontend has a prepared remote data bridge.
 
-No production Vercel env vars are configured yet.
+Production cloud resources are configured for the Chef OS demo:
+
+- Google Cloud project: `chef-os-demo-20260603`
+- Supabase project: `chef-os-demo`
+- Supabase ref: `zqkwfflhjuckjmxqqheh`
+- Supabase URL: `https://zqkwfflhjuckjmxqqheh.supabase.co`
+- Production URL: `https://chef-os-demo.vercel.app`
 
 Files:
 
@@ -13,6 +19,7 @@ Files:
 - `.env.example`
 - `supabase/migrations/20260602191759_chef_os_core_schema.sql`
 - `supabase/migrations/20260603093000_chef_os_auth_bootstrap.sql`
+- `supabase/migrations/20260603100000_fix_bootstrap_demo_workspace.sql`
 
 The bootstrap migration adds:
 
@@ -26,41 +33,46 @@ After Google login, the frontend calls `bootstrap_demo_workspace()` to create or
 - active owner membership;
 - demo stations, staff, shift tasks, suppliers, inventory items, recipes, activity, and chat.
 
-## Required Setup
+## Completed Setup
 
-1. Create a dedicated Supabase project for Chef OS.
-2. Do not reuse `dsgvo-scanner`.
-3. Apply the migration only after confirming the target project.
-4. Enable Google provider in Supabase Auth.
-5. Add Vercel URL to Auth redirect URLs:
+1. Created a dedicated Supabase project for Chef OS.
+2. Confirmed `dsgvo-scanner` was not reused.
+3. Applied migrations to `zqkwfflhjuckjmxqqheh`.
+4. Created a Google Cloud OAuth web client in project `chef-os-demo-20260603`.
+5. Enabled Google provider in Supabase Auth.
+6. Added Supabase Auth redirect URL:
+   - `https://zqkwfflhjuckjmxqqheh.supabase.co/auth/v1/callback`
+7. Added Vercel URL to Supabase Auth redirect URLs:
    - `https://chef-os-demo.vercel.app`
-6. Add Vercel environment variables:
+8. Added Vercel environment variables for Production, Preview, and Development:
 
 ```bash
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+VITE_SUPABASE_URL=https://zqkwfflhjuckjmxqqheh.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<stored in Vercel>
 ```
 
-Current inspection on 2026-06-03:
+Current inspection on 2026-06-03 after cloud setup and login verification:
 
 - Supabase CLI is authenticated.
-- Existing Supabase projects are `ViVaLaDaniel's SD2`, `dsgvo-scanner`, and `Agent-Workspace-DB`.
-- No dedicated `chef-os-demo` Supabase project was found.
-- Vercel project `chef-os-demo` exists.
-- Vercel project `chef-os-demo` currently has no environment variables.
+- Dedicated Supabase project `chef-os-demo` exists and is linked locally.
+- Migrations `20260602191759`, `20260603093000`, and `20260603100000` are applied remotely.
+- Vercel project `chef-os-demo` has Supabase env vars in Production, Preview, and Development.
+- Google login was verified in production with `zamyatin.daniel@gmail.com`.
+- First login created profile, restaurant, owner membership, demo stations, shift tasks, inventory items, activity, and chat rows.
 
 ## Google Login Notes
 
 The frontend uses `supabase.auth.signInWithOAuth({ provider: "google" })`.
 
-Google provider setup still requires:
+Google provider is configured through `supabase/config.toml`:
 
-- Google Cloud OAuth client;
-- Supabase Auth provider configuration;
-- redirect URL alignment;
-- Vercel env vars.
+- `client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"`
+- `secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"`
+- `redirect_uri = "https://zqkwfflhjuckjmxqqheh.supabase.co/auth/v1/callback"`
 
 Do not commit Google OAuth client secrets. Keep them in Google Cloud, Supabase Auth settings, and Vercel environment variables only.
+
+The Google OAuth app is in testing/external mode. The verified test account is `zamyatin.daniel@gmail.com`.
 
 ## Local Docker Warning
 

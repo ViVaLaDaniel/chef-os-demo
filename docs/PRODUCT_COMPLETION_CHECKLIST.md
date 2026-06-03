@@ -101,12 +101,14 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Core Supabase migration prepared.
 - [x] Auth bootstrap migration prepared.
 - [x] Frontend remote data bridge prepared.
-- [ ] Create dedicated Chef OS Supabase project.
-- [ ] Configure Google OAuth.
-- [ ] Add Vercel env vars.
-- [ ] Apply migration to confirmed project.
-- [ ] Verify first Google login seeds restaurant and owner role.
-- [ ] Verify frontend against real remote data.
+- [x] Create dedicated Chef OS Supabase project.
+- [x] Configure Google OAuth.
+- [x] Add Vercel env vars.
+- [x] Apply migration to confirmed project.
+- [x] Verify first Google login seeds restaurant and owner role.
+- [x] Verify frontend against real remote data.
+- [x] Verify remote task completion write.
+- [ ] Verify remote writes for inventory reports and chat.
 
 ## Mobile / Android / iOS / PWA
 
