@@ -156,6 +156,19 @@ export async function createRemoteChannelMessage({ restaurantId, text, senderLab
   return mapMessage(data);
 }
 
+export async function resetRemoteDemoWorkspace() {
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc("reset_demo_workspace");
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
 function mapTask(task, stationsById) {
   const stationName = task.stations?.name ?? stationsById.get(task.station_id)?.name ?? "Смена";
 

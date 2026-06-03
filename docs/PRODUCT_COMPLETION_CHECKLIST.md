@@ -22,8 +22,9 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Show current cook profile.
 - [x] Show personal instruction for the shift.
 - [x] Show assigned station.
-- [ ] Load real profile from Google/Supabase.
-- [ ] Add profile photo.
+- [x] Load signed-in account name from Google/Supabase.
+- [x] Add signed-in account photo in the auth/status card.
+- [ ] Load operational cook profile from Google/Supabase membership.
 - [ ] Add language preference.
 - [ ] Add station skill tags.
 - [ ] Add emergency contact visibility rules.
@@ -110,7 +111,7 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Verify remote task completion write.
 - [x] Verify remote inventory report create and confirm writes.
 - [x] Verify remote chat message write.
-- [ ] Add admin/demo reset action for pilot data cleanup.
+- [x] Add admin/demo reset action for pilot data cleanup.
 
 ## Mobile / Android / iOS / PWA
 

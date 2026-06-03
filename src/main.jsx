@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   ShoppingBasket,
   Sparkles,
+  RotateCcw,
   Users,
   Utensils,
   Wifi,
@@ -35,6 +36,7 @@ import {
   confirmRemoteInventoryReport,
   createRemoteChannelMessage,
   createRemoteInventoryReport,
+  resetRemoteDemoWorkspace,
   updateRemoteShiftTask,
 } from "./lib/chefOsRemote";
 import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
@@ -293,6 +295,7 @@ function App() {
   const [toast, setToast] = React.useState("");
   const [session, setSession] = React.useState(null);
   const [authLoading, setAuthLoading] = React.useState(false);
+  const [resetLoading, setResetLoading] = React.useState(false);
   const isOnline = useOnlineStatus();
 
   React.useEffect(() => {
@@ -451,6 +454,30 @@ function App() {
     }
   }
 
+  async function resetDemoWorkspace() {
+    if (remoteWorkspace.status !== "connected") {
+      setToast("Сначала подключите Supabase через Google");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      await resetRemoteDemoWorkspace();
+      const workspace = await bootstrapAndLoadChefOsWorkspace();
+      setRemoteWorkspace({ restaurantId: workspace.restaurantId, status: "connected", message: "Supabase подключен" });
+      setTasks(workspace.tasks.length > 0 ? workspace.tasks : initialTasks);
+      setInventoryItems(workspace.inventoryItems.length > 0 ? workspace.inventoryItems : initialInventoryItems);
+      setInventoryReports(workspace.inventoryReports);
+      setActivity(workspace.activity.length > 0 ? workspace.activity : initialActivity);
+      setChatMessages(workspace.chatMessages.length > 0 ? workspace.chatMessages : messages);
+      setToast("Demo workspace очищен");
+    } catch (error) {
+      setToast(`Reset не выполнен: ${error.message}`);
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   function handleQuickAction(action) {
     addActivity(action.event, action.meta, action.tone, currentCook.name);
     if (action.id === "station-task") {
@@ -581,7 +608,7 @@ function App() {
             }}
           />
         )}
-        {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} onClose={() => setSettingsOpen(false)} />}
+        {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} resetLoading={resetLoading} onResetDemo={resetDemoWorkspace} onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
@@ -596,13 +623,16 @@ function App() {
 
 function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, onSignIn, onSignOut }) {
   const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
+  const userAvatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
   const NetworkIcon = isOnline ? Wifi : WifiOff;
   const cacheLabel = cacheStatus.savedAt ? `Смена сохранена ${formatCacheTime(cacheStatus.savedAt)}` : "Локальный кеш готов";
   const databaseLabel = getDatabaseLabel(remoteWorkspace, session);
 
   return (
     <section className="mb-4 flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-white p-3 shadow-sm">
-      <div className="min-w-0">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {session && <AccountAvatar userLabel={userLabel} avatarUrl={userAvatarUrl} />}
+        <div className="min-w-0">
         <p className="text-xs font-black uppercase tracking-wide text-slate-500">{isSupabaseConfigured ? "Общая база" : "Demo mode"}</p>
         <p className="truncate text-sm font-black text-slate-950">{session ? userLabel : isSupabaseConfigured ? "Войдите через Google" : "Supabase env не задан"}</p>
         <p className={`mt-1 inline-flex items-center gap-1 text-xs font-black ${isOnline ? "text-green-600" : "text-amber-600"}`}>
@@ -611,6 +641,7 @@ function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, 
         </p>
         <p className="mt-0.5 text-xs font-bold text-slate-400">{cacheLabel}</p>
         <p className="mt-0.5 text-xs font-bold text-slate-400">{databaseLabel}</p>
+        </div>
       </div>
       <button
         onClick={session ? onSignOut : onSignIn}
@@ -620,6 +651,27 @@ function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, 
         {loading ? "..." : session ? "Выйти" : "Google"}
       </button>
     </section>
+  );
+}
+
+function AccountAvatar({ userLabel, avatarUrl }) {
+  const fallback = getInitials(userLabel);
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={userLabel ? `Фото аккаунта ${userLabel}` : "Фото аккаунта"}
+        className="h-12 w-12 shrink-0 rounded-2xl object-cover ring-2 ring-amber-100"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-base font-black text-white ring-2 ring-amber-100">
+      {fallback}
+    </span>
   );
 }
 
@@ -1051,7 +1103,9 @@ function ScheduleSheet({ onClose, onOpenStaff }) {
   );
 }
 
-function SettingsSheet({ remoteWorkspace, onClose }) {
+function SettingsSheet({ remoteWorkspace, resetLoading, onResetDemo, onClose }) {
+  const canResetDemo = remoteWorkspace.status === "connected" && !resetLoading;
+
   return (
     <Sheet onClose={onClose} title="Настройки" eyebrow="Пока демо">
       <div className="space-y-3">
@@ -1067,6 +1121,14 @@ function SettingsSheet({ remoteWorkspace, onClose }) {
             <span className="text-right text-sm font-black text-slate-950">{value}</span>
           </div>
         ))}
+        <button
+          onClick={onResetDemo}
+          disabled={!canResetDemo}
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300"
+        >
+          <RotateCcw size={18} />
+          {resetLoading ? "Очищаю demo..." : "Очистить demo данные"}
+        </button>
       </div>
     </Sheet>
   );
@@ -1466,6 +1528,20 @@ function writeOperationalCache(snapshot) {
   } catch {
     return null;
   }
+}
+
+function getInitials(value) {
+  if (!value) {
+    return "?";
+  }
+
+  const words = value
+    .replace(/@.*/, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  const initials = words.slice(0, 2).map((word) => word[0]).join("");
+
+  return initials.toUpperCase() || "?";
 }
 
 function useNow() {

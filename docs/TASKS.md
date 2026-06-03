@@ -4,7 +4,6 @@
 
 - Keep `docs/INTERACTION_LOGIC.md` aligned with UI behavior.
 - Keep `docs/PRODUCT_COMPLETION_CHECKLIST.md` updated after every product iteration.
-- Decide whether to keep demo verification rows or add an admin reset action for pilot demos.
 
 ## Frontend Integration
 
@@ -15,6 +14,7 @@
 - Verify shift task completion persists to `shift_tasks` in production. Completed on 2026-06-03 for `Принять рыбу и температуру`.
 - Verify chat messages persist to `channel_messages` in production. Completed on 2026-06-03 with `Тест sync: склад подтвержден`.
 - Load station process guides from `stations` and `station_processes`.
+- Load operational cook profile and role from Supabase membership instead of the fixed demo cook.
 
 ## Roles
 

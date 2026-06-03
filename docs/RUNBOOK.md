@@ -106,6 +106,15 @@ Applied migrations:
 - `20260602191759`
 - `20260603093000`
 - `20260603100000`
+- `20260603103000`
+
+Current production reset baseline after 2026-06-03 verification:
+
+- `inventory_reports = 0`
+- `channel_messages = 1`
+- `activity_log = 1`
+- `shift_tasks.todo = 3`
+- `shift_tasks.done = 1`
 
 Safe inspection:
 
@@ -147,3 +156,17 @@ Production write smoke checks:
 2. In `Склад`, create an inventory signal and confirm an `inventory_reports` row appears.
 3. Confirm the inventory signal as sous-chef and verify `inventory_reports.status = confirmed`.
 4. In `Чат`, send a message and verify a `channel_messages` row appears.
+
+Demo reset smoke check:
+
+1. Open `Меню` -> `Настройки`.
+2. Click `Очистить demo данные`.
+3. Confirm the app still shows `Supabase подключен`.
+4. Confirm test inventory reports and extra chat messages are removed.
+5. Confirm the activity log contains `Demo workspace очищен для показа`.
+
+Account photo smoke check:
+
+1. Sign in with Google.
+2. Confirm the auth/status card shows the Google account photo.
+3. If Google does not return an image URL, confirm the initials fallback is shown.
