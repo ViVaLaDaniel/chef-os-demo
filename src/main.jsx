@@ -297,6 +297,8 @@ function App() {
   const [authLoading, setAuthLoading] = React.useState(false);
   const [resetLoading, setResetLoading] = React.useState(false);
   const isOnline = useOnlineStatus();
+  const accountName = getAccountDisplayName(session);
+  const accountUserId = session?.user?.id ?? null;
 
   React.useEffect(() => {
     if (!supabase) return undefined;
@@ -326,7 +328,7 @@ function App() {
       setRemoteWorkspace((current) => ({ ...current, status: "loading", message: "Загружаю базу" }));
 
       try {
-        const workspace = await bootstrapAndLoadChefOsWorkspace();
+        const workspace = await bootstrapAndLoadChefOsWorkspace({ currentUserId: accountUserId });
         if (isCancelled || !workspace) {
           return;
         }
@@ -352,7 +354,7 @@ function App() {
     return () => {
       isCancelled = true;
     };
-  }, [session]);
+  }, [accountUserId, session]);
 
   React.useEffect(() => {
     const savedAt = writeOperationalCache({
@@ -391,7 +393,7 @@ function App() {
     setToast("Вы вышли из аккаунта");
   }
 
-  function addActivity(action, meta, tone = "amber", actor = "Chef") {
+  function addActivity(action, meta, tone = "amber", actor = accountName) {
     setActivity((current) => [{ id: Date.now(), actor, action, meta, time: "сейчас", tone }, ...current]);
   }
 
@@ -399,7 +401,7 @@ function App() {
     const action = `${item.name}: ${level}`;
     const localReport = { id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier, status: "Новая" };
     setInventoryReports((current) => [localReport, ...current]);
-    addActivity(action, item.station, level === "закончилось" ? "red" : "amber", "Повар");
+    addActivity(action, item.station, level === "закончилось" ? "red" : "amber", accountName);
     setToast(`Сигнал отправлен су-шефу: ${item.name}`);
 
     if (remoteWorkspace.status !== "connected") {
@@ -407,7 +409,7 @@ function App() {
     }
 
     try {
-      const remoteReport = await createRemoteInventoryReport({ restaurantId: remoteWorkspace.restaurantId, item, level });
+      const remoteReport = await createRemoteInventoryReport({ restaurantId: remoteWorkspace.restaurantId, item, level, userId: accountUserId });
       if (remoteReport) {
         setInventoryReports((current) => current.map((report) => (report.id === localReport.id ? remoteReport : report)));
       }
@@ -418,11 +420,11 @@ function App() {
 
   async function confirmInventoryReport(report) {
     setInventoryReports((current) => current.map((item) => (item.id === report.id ? { ...item, status: "Подтверждена" } : item)));
-    addActivity(`Подтвердил заявку: ${report.item}`, report.station, "green", "Су-шеф");
+    addActivity(`Подтвердил заявку: ${report.item}`, report.station, "green", accountName);
     setToast(`Заявка подтверждена: ${report.item}`);
 
     try {
-      await confirmRemoteInventoryReport(report);
+      await confirmRemoteInventoryReport(report, { userId: accountUserId });
     } catch (error) {
       setToast(`Подтверждение сохранено локально, база недоступна: ${error.message}`);
     }
@@ -431,21 +433,21 @@ function App() {
   async function toggleTask(task) {
     const nextDone = !task.done;
     setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, done: nextDone } : item)));
-    addActivity(`${nextDone ? "Закрыл" : "Вернул"} задачу: ${task.title}`, task.station, nextDone ? "green" : "amber", currentCook.name);
+    addActivity(`${nextDone ? "Закрыл" : "Вернул"} задачу: ${task.title}`, task.station, nextDone ? "green" : "amber", accountName);
 
     try {
-      await updateRemoteShiftTask(task, nextDone);
+      await updateRemoteShiftTask(task, nextDone, { userId: accountUserId });
     } catch (error) {
       setToast(`Задача сохранена локально, база недоступна: ${error.message}`);
     }
   }
 
   async function sendChatMessage(text) {
-    const localMessage = { id: Date.now(), from: "Chef", text, mine: true, time: "сейчас" };
+    const localMessage = { id: Date.now(), from: accountName, text, mine: true, time: "сейчас" };
     setChatMessages((current) => [...current, localMessage]);
 
     try {
-      const remoteMessage = await createRemoteChannelMessage({ restaurantId: remoteWorkspace.restaurantId, text, senderLabel: "Chef" });
+      const remoteMessage = await createRemoteChannelMessage({ restaurantId: remoteWorkspace.restaurantId, text, senderLabel: accountName, userId: accountUserId });
       if (remoteMessage) {
         setChatMessages((current) => current.map((message) => (message.id === localMessage.id ? remoteMessage : message)));
       }
@@ -462,8 +464,8 @@ function App() {
 
     setResetLoading(true);
     try {
-      await resetRemoteDemoWorkspace();
-      const workspace = await bootstrapAndLoadChefOsWorkspace();
+      await resetRemoteDemoWorkspace({ actorLabel: accountName });
+      const workspace = await bootstrapAndLoadChefOsWorkspace({ currentUserId: accountUserId });
       setRemoteWorkspace({ restaurantId: workspace.restaurantId, status: "connected", message: "Supabase подключен" });
       setTasks(workspace.tasks.length > 0 ? workspace.tasks : initialTasks);
       setInventoryItems(workspace.inventoryItems.length > 0 ? workspace.inventoryItems : initialInventoryItems);
@@ -479,7 +481,7 @@ function App() {
   }
 
   function handleQuickAction(action) {
-    addActivity(action.event, action.meta, action.tone, currentCook.name);
+    addActivity(action.event, action.meta, action.tone, accountName);
     if (action.id === "station-task") {
       setTasks((current) => [
         ...current,
@@ -504,7 +506,7 @@ function App() {
 
   function toggleGeneralChecklist(item) {
     setGeneralChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)));
-    addActivity(`${item.done ? "Вернул" : "Закрыл"} общий чек: ${item.title}`, item.station, item.done ? "amber" : "green", currentCook.name);
+    addActivity(`${item.done ? "Вернул" : "Закрыл"} общий чек: ${item.title}`, item.station, item.done ? "amber" : "green", accountName);
   }
 
   function toggleStationChecklist(stationId, phase, itemId) {
@@ -518,7 +520,7 @@ function App() {
       },
     }));
     if (item && station) {
-      addActivity(`${item.done ? "Вернул" : "Закрыл"} чек: ${item.title}`, station.name, item.done ? "amber" : "green", currentCook.name);
+      addActivity(`${item.done ? "Вернул" : "Закрыл"} чек: ${item.title}`, station.name, item.done ? "amber" : "green", accountName);
     }
   }
 
@@ -622,7 +624,7 @@ function App() {
 }
 
 function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, onSignIn, onSignOut }) {
-  const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
+  const userLabel = getAccountDisplayName(session);
   const userAvatarUrl = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
   const NetworkIcon = isOnline ? Wifi : WifiOff;
   const cacheLabel = cacheStatus.savedAt ? `Смена сохранена ${formatCacheTime(cacheStatus.savedAt)}` : "Локальный кеш готов";
@@ -806,7 +808,7 @@ function ShiftScreen({ tasks, generalChecklist, stationChecklists, onToggleTask,
               <button
                 key={label}
                 onClick={() => {
-                  addActivity(`Быстрый сигнал: ${label}`, currentCook.station, label.includes("Закончился") ? "red" : "amber", currentCook.name);
+                  addActivity(`Быстрый сигнал: ${label}`, currentCook.station, label.includes("Закончился") ? "red" : "amber", accountName);
                   setToast(`Сигнал создан: ${label}`);
                 }}
                 className="flex min-h-20 flex-col justify-between rounded-3xl bg-white p-4 text-left shadow-sm"
@@ -1528,6 +1530,14 @@ function writeOperationalCache(snapshot) {
   } catch {
     return null;
   }
+}
+
+function getAccountDisplayName(session) {
+  if (!session?.user) {
+    return "Chef";
+  }
+
+  return session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email || "Chef";
 }
 
 function getInitials(value) {

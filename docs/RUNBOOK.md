@@ -107,6 +107,7 @@ Applied migrations:
 - `20260603093000`
 - `20260603100000`
 - `20260603103000`
+- `20260603104500`
 
 Current production reset baseline after 2026-06-03 verification:
 
@@ -115,6 +116,8 @@ Current production reset baseline after 2026-06-03 verification:
 - `activity_log = 1`
 - `shift_tasks.todo = 3`
 - `shift_tasks.done = 1`
+- latest reset `actor_label = Daniel Zamiatin`
+- latest reset `sender_label = Daniel Zamiatin`
 
 Safe inspection:
 
@@ -155,7 +158,8 @@ Production write smoke checks:
 1. In `Смена`, toggle a remote task and confirm `shift_tasks.status` changes.
 2. In `Склад`, create an inventory signal and confirm an `inventory_reports` row appears.
 3. Confirm the inventory signal as sous-chef and verify `inventory_reports.status = confirmed`.
-4. In `Чат`, send a message and verify a `channel_messages` row appears.
+4. Verify `completed_by`, `reported_by`, and `confirmed_by` resolve to the signed-in account.
+5. In `Чат`, send a message and verify a `channel_messages` row appears with the signed-in account name.
 
 Demo reset smoke check:
 
@@ -164,6 +168,7 @@ Demo reset smoke check:
 3. Confirm the app still shows `Supabase подключен`.
 4. Confirm test inventory reports and extra chat messages are removed.
 5. Confirm the activity log contains `Demo workspace очищен для показа`.
+6. Confirm reset `activity_log.actor_label` and reset `channel_messages.sender_label` match the signed-in account name.
 
 Account photo smoke check:
 

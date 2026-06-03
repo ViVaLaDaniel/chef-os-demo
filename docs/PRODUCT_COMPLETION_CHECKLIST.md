@@ -67,7 +67,7 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Cook can signal low/one-left/empty.
 - [x] Sous-chef can confirm signal in prototype.
 - [x] Prepare inventory item/report Supabase read/write bridge.
-- [ ] Verify inventory item/report persistence against confirmed Supabase project.
+- [x] Verify inventory item/report persistence against confirmed Supabase project.
 - [ ] Add supplier order workflow.
 - [ ] Add photo upload.
 - [ ] Add par levels and portion impact.
@@ -89,7 +89,7 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Staff list with quick call.
 - [x] Chat prototype.
 - [x] Prepare chat message Supabase write bridge.
-- [ ] Verify chat message persistence against confirmed Supabase project.
+- [x] Verify chat message persistence against confirmed Supabase project.
 - [ ] Add push notifications.
 - [ ] Add pinned announcements.
 - [ ] Add staff invites.
@@ -112,6 +112,7 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Verify remote inventory report create and confirm writes.
 - [x] Verify remote chat message write.
 - [x] Add admin/demo reset action for pilot data cleanup.
+- [x] Persist signed-in account identity on remote task, inventory, chat, and reset writes.
 
 ## Mobile / Android / iOS / PWA
 

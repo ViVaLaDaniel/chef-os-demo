@@ -20,7 +20,7 @@ const REPORT_STATUS_LABELS = {
   rejected: "Отклонена",
 };
 
-export async function bootstrapAndLoadChefOsWorkspace() {
+export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
   if (!supabase) {
     return null;
   }
@@ -53,7 +53,7 @@ export async function bootstrapAndLoadChefOsWorkspace() {
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: false }),
     supabase.from("activity_log").select("id,actor_label,action,metadata,created_at").eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(20),
-    supabase.from("channel_messages").select("id,sender_label,body,created_at").eq("restaurant_id", restaurantId).order("created_at", { ascending: true }).limit(50),
+    supabase.from("channel_messages").select("id,sender_user_id,sender_label,body,created_at").eq("restaurant_id", restaurantId).order("created_at", { ascending: true }).limit(50),
   ]);
 
   const results = [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult];
@@ -70,11 +70,11 @@ export async function bootstrapAndLoadChefOsWorkspace() {
     inventoryItems: (inventoryResult.data ?? []).map(mapInventoryItem),
     inventoryReports: (reportsResult.data ?? []).map(mapInventoryReport),
     activity: (activityResult.data ?? []).map(mapActivity),
-    chatMessages: (messagesResult.data ?? []).map(mapMessage),
+    chatMessages: (messagesResult.data ?? []).map((message) => mapMessage(message, currentUserId)),
   };
 }
 
-export async function updateRemoteShiftTask(task, done) {
+export async function updateRemoteShiftTask(task, done, { userId } = {}) {
   if (!supabase || !task.remoteId) {
     return;
   }
@@ -83,6 +83,7 @@ export async function updateRemoteShiftTask(task, done) {
     .from("shift_tasks")
     .update({
       status: done ? "done" : "todo",
+      completed_by: done ? userId ?? null : null,
       completed_at: done ? new Date().toISOString() : null,
     })
     .eq("id", task.remoteId);
@@ -92,7 +93,7 @@ export async function updateRemoteShiftTask(task, done) {
   }
 }
 
-export async function createRemoteInventoryReport({ restaurantId, item, level }) {
+export async function createRemoteInventoryReport({ restaurantId, item, level, userId }) {
   if (!supabase || !restaurantId || !item.remoteId) {
     return null;
   }
@@ -103,6 +104,7 @@ export async function createRemoteInventoryReport({ restaurantId, item, level })
       restaurant_id: restaurantId,
       inventory_item_id: item.remoteId,
       station_id: item.stationId ?? null,
+      reported_by: userId ?? null,
       level: STOCK_LEVEL_MAP[level] ?? "low",
       note: level,
     })
@@ -116,7 +118,7 @@ export async function createRemoteInventoryReport({ restaurantId, item, level })
   return mapInventoryReport(data);
 }
 
-export async function confirmRemoteInventoryReport(report) {
+export async function confirmRemoteInventoryReport(report, { userId } = {}) {
   if (!supabase || !report.remoteId) {
     return;
   }
@@ -125,6 +127,7 @@ export async function confirmRemoteInventoryReport(report) {
     .from("inventory_reports")
     .update({
       status: "confirmed",
+      confirmed_by: userId ?? null,
       confirmed_at: new Date().toISOString(),
     })
     .eq("id", report.remoteId);
@@ -134,7 +137,7 @@ export async function confirmRemoteInventoryReport(report) {
   }
 }
 
-export async function createRemoteChannelMessage({ restaurantId, text, senderLabel }) {
+export async function createRemoteChannelMessage({ restaurantId, text, senderLabel, userId }) {
   if (!supabase || !restaurantId) {
     return null;
   }
@@ -143,25 +146,26 @@ export async function createRemoteChannelMessage({ restaurantId, text, senderLab
     .from("channel_messages")
     .insert({
       restaurant_id: restaurantId,
+      sender_user_id: userId ?? null,
       sender_label: senderLabel,
       body: text,
     })
-    .select("id,sender_label,body,created_at")
+    .select("id,sender_user_id,sender_label,body,created_at")
     .single();
 
   if (error) {
     throw error;
   }
 
-  return mapMessage(data);
+  return mapMessage(data, userId);
 }
 
-export async function resetRemoteDemoWorkspace() {
+export async function resetRemoteDemoWorkspace({ actorLabel } = {}) {
   if (!supabase) {
     return null;
   }
 
-  const { data, error } = await supabase.rpc("reset_demo_workspace");
+  const { data, error } = await supabase.rpc("reset_demo_workspace", { actor_label: actorLabel ?? null });
   if (error) {
     throw error;
   }
@@ -220,14 +224,14 @@ function mapActivity(event) {
   };
 }
 
-function mapMessage(message) {
+function mapMessage(message, currentUserId) {
   const senderLabel = message.sender_label ?? "Chef";
 
   return {
     id: message.id,
     from: senderLabel,
     text: message.body,
-    mine: senderLabel === "Chef",
+    mine: message.sender_user_id ? message.sender_user_id === currentUserId : senderLabel === "Chef",
     time: formatRemoteTime(message.created_at),
   };
 }

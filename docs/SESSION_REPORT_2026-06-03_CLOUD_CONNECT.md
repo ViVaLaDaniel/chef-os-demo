@@ -13,6 +13,8 @@
   - `20260603100000_fix_bootstrap_demo_workspace.sql`
 - Added and applied demo reset migration:
   - `20260603103000_add_demo_workspace_reset.sql`
+- Added and applied account identity write migration:
+  - `20260603104500_use_account_identity_for_writes.sql`
 - Configured Supabase Auth site URL and redirect URLs for Vercel.
 - Created Google OAuth web client for Chef OS.
 - Enabled Google provider in Supabase Auth.
@@ -25,6 +27,7 @@
 - Verified remote chat message write from production UI to Supabase.
 - Added demo reset RPC and Settings action for pilot data cleanup.
 - Added signed-in Google account photo to the auth/status card with initials fallback.
+- Propagated signed-in account name/user id to task completion, inventory reporting, inventory confirmation, chat sender labels, and demo reset rows.
 - Updated docs and runbook with cloud resource IDs.
 
 ## Verification
@@ -33,12 +36,17 @@
 - `supabase config push --project-ref zqkwfflhjuckjmxqqheh --yes` completed.
 - `supabase db push --linked` applied `20260603100000`.
 - `supabase db push --linked` applied `20260603103000`.
+- `supabase db push --linked` applied `20260603104500`.
 - `vercel env ls` shows Supabase env vars in Production, Preview, and Development.
 - `curl.exe -I https://chef-os-demo.vercel.app` returned `200 OK`.
 - Browser smoke test showed `Daniel Zamiatin` and `Supabase подключен`.
 - Production UI task toggle changed `Принять рыбу и температуру` to `done` in `shift_tasks` with `completed_at`.
 - Production inventory signal created `Соевый соус` report with `level = empty`, then confirmation changed it to `status = confirmed` with `confirmed_at`.
-- Production chat sent `Тест sync: склад подтвержден` and created a `channel_messages` row from `Chef`.
+- Earlier production chat smoke sent `Тест sync: склад подтвержден` and created a `channel_messages` row before account identity propagation.
+- Production identity smoke verified `inventory_reports.reported_by`, `inventory_reports.confirmed_by`, and `shift_tasks.completed_by` resolve to `Daniel Zamiatin`.
+- Production UI activity for task, inventory signal, and inventory confirmation showed `Daniel Zamiatin`.
+- Production reset rows now use `Daniel Zamiatin` as both `activity_log.actor_label` and `channel_messages.sender_label`.
+- Browser automation could not type a new chat message after identity propagation because the Browser tool's virtual clipboard/input layer rejected text entry; the chat sender code path now passes the same signed-in account name and user id used by other remote writes.
 - `reset_demo_workspace()` was verified in a rollback transaction for the owner account.
 - Production UI reset from Settings was verified.
 - Production auth/status card rendered Google account photo from `lh3.googleusercontent.com`.
@@ -48,6 +56,8 @@
   - activity rows: 1
   - todo tasks: 3
   - done tasks: 1
+  - latest actor: Daniel Zamiatin
+  - latest sender: Daniel Zamiatin
 - Database counts after login:
   - restaurants: 1
   - restaurant members: 1

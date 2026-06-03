@@ -20,6 +20,8 @@ Files:
 - `supabase/migrations/20260602191759_chef_os_core_schema.sql`
 - `supabase/migrations/20260603093000_chef_os_auth_bootstrap.sql`
 - `supabase/migrations/20260603100000_fix_bootstrap_demo_workspace.sql`
+- `supabase/migrations/20260603103000_add_demo_workspace_reset.sql`
+- `supabase/migrations/20260603104500_use_account_identity_for_writes.sql`
 
 The bootstrap migration adds:
 
@@ -55,10 +57,11 @@ Current inspection on 2026-06-03 after cloud setup and login verification:
 
 - Supabase CLI is authenticated.
 - Dedicated Supabase project `chef-os-demo` exists and is linked locally.
-- Migrations `20260602191759`, `20260603093000`, and `20260603100000` are applied remotely.
+- Migrations `20260602191759`, `20260603093000`, `20260603100000`, `20260603103000`, and `20260603104500` are applied remotely.
 - Vercel project `chef-os-demo` has Supabase env vars in Production, Preview, and Development.
 - Google login was verified in production with `zamyatin.daniel@gmail.com`.
 - First login created profile, restaurant, owner membership, demo stations, shift tasks, inventory items, activity, and chat rows.
+- Signed-in account identity is written to remote task completion, inventory report, inventory confirmation, chat sender, and reset rows.
 
 ## Google Login Notes
 
