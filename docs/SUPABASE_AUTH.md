@@ -2,13 +2,29 @@
 
 ## Current Status
 
-Supabase client wiring exists, but no production env vars are configured in this repo.
+Supabase client wiring exists, and the frontend has a prepared remote data bridge.
+
+No production Vercel env vars are configured yet.
 
 Files:
 
 - `src/lib/supabase.js`
+- `src/lib/chefOsRemote.js`
 - `.env.example`
 - `supabase/migrations/20260602191759_chef_os_core_schema.sql`
+- `supabase/migrations/20260603093000_chef_os_auth_bootstrap.sql`
+
+The bootstrap migration adds:
+
+- `public.ensure_user_profile()`
+- `public.bootstrap_demo_workspace()`
+
+After Google login, the frontend calls `bootstrap_demo_workspace()` to create or reuse:
+
+- profile;
+- restaurant;
+- active owner membership;
+- demo stations, staff, shift tasks, suppliers, inventory items, recipes, activity, and chat.
 
 ## Required Setup
 
@@ -25,6 +41,14 @@ VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
 ```
 
+Current inspection on 2026-06-03:
+
+- Supabase CLI is authenticated.
+- Existing Supabase projects are `ViVaLaDaniel's SD2`, `dsgvo-scanner`, and `Agent-Workspace-DB`.
+- No dedicated `chef-os-demo` Supabase project was found.
+- Vercel project `chef-os-demo` exists.
+- Vercel project `chef-os-demo` currently has no environment variables.
+
 ## Google Login Notes
 
 The frontend uses `supabase.auth.signInWithOAuth({ provider: "google" })`.
@@ -35,6 +59,8 @@ Google provider setup still requires:
 - Supabase Auth provider configuration;
 - redirect URL alignment;
 - Vercel env vars.
+
+Do not commit Google OAuth client secrets. Keep them in Google Cloud, Supabase Auth settings, and Vercel environment variables only.
 
 ## Local Docker Warning
 

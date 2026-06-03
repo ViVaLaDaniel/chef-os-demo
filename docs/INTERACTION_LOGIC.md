@@ -111,6 +111,8 @@ When a cook is assigned to a station:
 - FAB opens context actions, and each action creates feedback/activity.
 - Close buttons close their sheet/toast.
 - Google button either starts OAuth or explains that Supabase env is missing.
+- After Google login, the app attempts to bootstrap/load the user's Chef OS workspace from Supabase.
+- If Supabase writes fail, the action remains local and the UI reports that the database is unavailable.
 
 ## Quick Actions Logic
 

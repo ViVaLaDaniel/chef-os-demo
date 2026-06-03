@@ -30,6 +30,13 @@ import {
   X,
 } from "lucide-react";
 import "./index.css";
+import {
+  bootstrapAndLoadChefOsWorkspace,
+  confirmRemoteInventoryReport,
+  createRemoteChannelMessage,
+  createRemoteInventoryReport,
+  updateRemoteShiftTask,
+} from "./lib/chefOsRemote";
 import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
 
 const tabs = [
@@ -165,7 +172,7 @@ const stopList = [
   { id: 2, item: "Пюре батат", reason: "Осталось на 4 порции", station: "Горячий цех" },
 ];
 
-const inventoryItems = [
+const initialInventoryItems = [
   { id: 1, name: "Тунец", station: "Холодный цех", stock: "1 лоток", par: "4 лотка", status: "critical", supplier: "Nord Fish" },
   { id: 2, name: "Сливочное масло", station: "Горячий цех", stock: "2 пачки", par: "8 пачек", status: "low", supplier: "Prime Market" },
   { id: 3, name: "Соевый соус", station: "Суши", stock: "1 банка", par: "6 банок", status: "low", supplier: "Asian Pro" },
@@ -263,12 +270,14 @@ function App() {
   const [generalChecklist, setGeneralChecklist] = React.useState(initialOperationalState.generalChecklist);
   const [stationChecklists, setStationChecklists] = React.useState(initialOperationalState.stationChecklists);
   const [activity, setActivity] = React.useState(initialOperationalState.activity);
+  const [inventoryItems, setInventoryItems] = React.useState(initialOperationalState.inventoryItems);
   const [inventoryReports, setInventoryReports] = React.useState(initialOperationalState.inventoryReports);
   const [chatMessages, setChatMessages] = React.useState(initialOperationalState.chatMessages);
   const [cacheStatus, setCacheStatus] = React.useState({
     savedAt: initialOperationalState.savedAt,
     source: initialOperationalState.source,
   });
+  const [remoteWorkspace, setRemoteWorkspace] = React.useState({ restaurantId: null, status: "idle", message: "" });
   const [query, setQuery] = React.useState("");
   const [recipeFilter, setRecipeFilter] = React.useState("Все");
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
@@ -303,10 +312,51 @@ function App() {
   }, []);
 
   React.useEffect(() => {
+    if (!session || !isSupabaseConfigured) {
+      setRemoteWorkspace((current) => ({ ...current, status: "idle", message: "" }));
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadWorkspace() {
+      setRemoteWorkspace((current) => ({ ...current, status: "loading", message: "Загружаю базу" }));
+
+      try {
+        const workspace = await bootstrapAndLoadChefOsWorkspace();
+        if (isCancelled || !workspace) {
+          return;
+        }
+
+        setRemoteWorkspace({ restaurantId: workspace.restaurantId, status: "connected", message: "Supabase подключен" });
+        setTasks(workspace.tasks.length > 0 ? workspace.tasks : initialTasks);
+        setInventoryItems(workspace.inventoryItems.length > 0 ? workspace.inventoryItems : initialInventoryItems);
+        setInventoryReports(workspace.inventoryReports);
+        setActivity(workspace.activity.length > 0 ? workspace.activity : initialActivity);
+        setChatMessages(workspace.chatMessages.length > 0 ? workspace.chatMessages : messages);
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        setRemoteWorkspace({ restaurantId: null, status: "error", message: error.message });
+        setToast(`База недоступна: ${error.message}`);
+      }
+    }
+
+    loadWorkspace();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session]);
+
+  React.useEffect(() => {
     const savedAt = writeOperationalCache({
       tasks,
       generalChecklist,
       stationChecklists,
+      inventoryItems,
       inventoryReports,
       activity,
       chatMessages,
@@ -315,7 +365,7 @@ function App() {
     if (savedAt) {
       setCacheStatus({ savedAt, source: "cache" });
     }
-  }, [activity, chatMessages, generalChecklist, inventoryReports, stationChecklists, tasks]);
+  }, [activity, chatMessages, generalChecklist, inventoryItems, inventoryReports, stationChecklists, tasks]);
 
   async function handleGoogleSignIn() {
     if (!isSupabaseConfigured) {
@@ -342,17 +392,63 @@ function App() {
     setActivity((current) => [{ id: Date.now(), actor, action, meta, time: "сейчас", tone }, ...current]);
   }
 
-  function reportInventory(item, level) {
+  async function reportInventory(item, level) {
     const action = `${item.name}: ${level}`;
-    setInventoryReports((current) => [{ id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier, status: "Новая" }, ...current]);
+    const localReport = { id: Date.now(), item: item.name, station: item.station, level, supplier: item.supplier, status: "Новая" };
+    setInventoryReports((current) => [localReport, ...current]);
     addActivity(action, item.station, level === "закончилось" ? "red" : "amber", "Повар");
     setToast(`Сигнал отправлен су-шефу: ${item.name}`);
+
+    if (remoteWorkspace.status !== "connected") {
+      return;
+    }
+
+    try {
+      const remoteReport = await createRemoteInventoryReport({ restaurantId: remoteWorkspace.restaurantId, item, level });
+      if (remoteReport) {
+        setInventoryReports((current) => current.map((report) => (report.id === localReport.id ? remoteReport : report)));
+      }
+    } catch (error) {
+      setToast(`Сигнал сохранен локально, база недоступна: ${error.message}`);
+    }
   }
 
-  function confirmInventoryReport(report) {
+  async function confirmInventoryReport(report) {
     setInventoryReports((current) => current.map((item) => (item.id === report.id ? { ...item, status: "Подтверждена" } : item)));
     addActivity(`Подтвердил заявку: ${report.item}`, report.station, "green", "Су-шеф");
     setToast(`Заявка подтверждена: ${report.item}`);
+
+    try {
+      await confirmRemoteInventoryReport(report);
+    } catch (error) {
+      setToast(`Подтверждение сохранено локально, база недоступна: ${error.message}`);
+    }
+  }
+
+  async function toggleTask(task) {
+    const nextDone = !task.done;
+    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, done: nextDone } : item)));
+    addActivity(`${nextDone ? "Закрыл" : "Вернул"} задачу: ${task.title}`, task.station, nextDone ? "green" : "amber", currentCook.name);
+
+    try {
+      await updateRemoteShiftTask(task, nextDone);
+    } catch (error) {
+      setToast(`Задача сохранена локально, база недоступна: ${error.message}`);
+    }
+  }
+
+  async function sendChatMessage(text) {
+    const localMessage = { id: Date.now(), from: "Chef", text, mine: true, time: "сейчас" };
+    setChatMessages((current) => [...current, localMessage]);
+
+    try {
+      const remoteMessage = await createRemoteChannelMessage({ restaurantId: remoteWorkspace.restaurantId, text, senderLabel: "Chef" });
+      if (remoteMessage) {
+        setChatMessages((current) => current.map((message) => (message.id === localMessage.id ? remoteMessage : message)));
+      }
+    } catch (error) {
+      setToast(`Сообщение сохранено локально, база недоступна: ${error.message}`);
+    }
   }
 
   function handleQuickAction(action) {
@@ -418,13 +514,13 @@ function App() {
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
-          <AuthStatus session={session} loading={authLoading} isOnline={isOnline} cacheStatus={cacheStatus} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
+          <AuthStatus session={session} loading={authLoading} isOnline={isOnline} cacheStatus={cacheStatus} remoteWorkspace={remoteWorkspace} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
             <ShiftScreen
               tasks={tasks}
-              setTasks={setTasks}
               generalChecklist={generalChecklist}
               stationChecklists={stationChecklists}
+              onToggleTask={toggleTask}
               toggleGeneralChecklist={toggleGeneralChecklist}
               activity={activity}
               addActivity={addActivity}
@@ -444,9 +540,9 @@ function App() {
               setSelectedRecipe={setSelectedRecipe}
             />
           )}
-          {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
+          {activeTab === "inventory" && <InventoryScreen inventoryItems={inventoryItems} reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
           {activeTab === "stations" && <StationsScreen stationChecklists={stationChecklists} setSelectedStation={setSelectedStation} />}
-          {activeTab === "chat" && <Chat messages={chatMessages} setMessages={setChatMessages} />}
+          {activeTab === "chat" && <Chat messages={chatMessages} onSendMessage={sendChatMessage} />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
         {topMenuOpen && (
@@ -485,7 +581,7 @@ function App() {
             }}
           />
         )}
-        {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
+        {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
@@ -498,10 +594,11 @@ function App() {
   );
 }
 
-function AuthStatus({ session, loading, isOnline, cacheStatus, onSignIn, onSignOut }) {
+function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, onSignIn, onSignOut }) {
   const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
   const NetworkIcon = isOnline ? Wifi : WifiOff;
   const cacheLabel = cacheStatus.savedAt ? `Смена сохранена ${formatCacheTime(cacheStatus.savedAt)}` : "Локальный кеш готов";
+  const databaseLabel = getDatabaseLabel(remoteWorkspace, session);
 
   return (
     <section className="mb-4 flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-white p-3 shadow-sm">
@@ -513,6 +610,7 @@ function AuthStatus({ session, loading, isOnline, cacheStatus, onSignIn, onSignO
           {isOnline ? "Online" : "Offline кеш"}
         </p>
         <p className="mt-0.5 text-xs font-bold text-slate-400">{cacheLabel}</p>
+        <p className="mt-0.5 text-xs font-bold text-slate-400">{databaseLabel}</p>
       </div>
       <button
         onClick={session ? onSignOut : onSignIn}
@@ -567,15 +665,8 @@ function AppHeader({ title, activeTab, onMenu }) {
   );
 }
 
-function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
+function ShiftScreen({ tasks, generalChecklist, stationChecklists, onToggleTask, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
   const openTasks = tasks.filter((task) => !task.done).length;
-
-  function toggleTask(task) {
-    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, done: !item.done } : item)));
-    if (!task.done) {
-      addActivity(`Закрыл задачу: ${task.title}`, task.station, "green");
-    }
-  }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
@@ -631,7 +722,7 @@ function ShiftScreen({ tasks, setTasks, generalChecklist, stationChecklists, tog
           <SectionHead title="Mise en place" badge={`${openTasks} активны`} />
           <div className="space-y-3">
             {tasks.map((task) => (
-              <button key={task.id} onClick={() => toggleTask(task)} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
+              <button key={task.id} onClick={() => onToggleTask(task)} className="flex min-h-16 w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm">
                 <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${task.done ? "bg-green-500 text-white" : task.priority === "critical" ? "bg-red-500 text-white" : "bg-amber-100 text-amber-700"}`}>
                   {task.done ? <Check size={24} strokeWidth={3} /> : <Clock3 size={24} />}
                 </span>
@@ -690,7 +781,7 @@ function ShiftMetric({ label, value, danger, onClick }) {
   );
 }
 
-function InventoryScreen({ reports, onReport, onConfirm }) {
+function InventoryScreen({ inventoryItems, reports, onReport, onConfirm }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_0.85fr]">
       <section className="space-y-3">
@@ -840,13 +931,13 @@ function Recipes({ filter, setFilter, recipes, query, setQuery, setSelectedRecip
   );
 }
 
-function Chat({ messages: chatMessages, setMessages: setChatMessages }) {
+function Chat({ messages: chatMessages, onSendMessage }) {
   const [draft, setDraft] = React.useState("");
 
   function sendMessage() {
     const text = draft.trim();
     if (!text) return;
-    setChatMessages((current) => [...current, { id: Date.now(), from: "Chef", text, mine: true, time: "сейчас" }]);
+    onSendMessage(text);
     setDraft("");
   }
 
@@ -960,7 +1051,7 @@ function ScheduleSheet({ onClose, onOpenStaff }) {
   );
 }
 
-function SettingsSheet({ onClose }) {
+function SettingsSheet({ remoteWorkspace, onClose }) {
   return (
     <Sheet onClose={onClose} title="Настройки" eyebrow="Пока демо">
       <div className="space-y-3">
@@ -968,7 +1059,7 @@ function SettingsSheet({ onClose }) {
           ["Ресторан", "Chef OS Demo"],
           ["Роль", currentCook.role],
           ["Язык", "Русский"],
-          ["База", isSupabaseConfigured ? "Supabase подключен" : "Demo mode"],
+          ["База", getDatabaseLabel(remoteWorkspace)],
           ["Мобильное приложение", "PWA/APK в roadmap"],
         ].map(([label, value]) => (
           <div key={label} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4">
@@ -1311,6 +1402,7 @@ function createSeedOperationalState() {
     tasks: initialTasks,
     generalChecklist: initialGeneralChecklist,
     stationChecklists: initialStationChecklists,
+    inventoryItems: initialInventoryItems,
     inventoryReports: [],
     activity: initialActivity,
     chatMessages: messages,
@@ -1339,6 +1431,7 @@ function readOperationalCache() {
       tasks: Array.isArray(data.tasks) ? data.tasks : seed.tasks,
       generalChecklist: Array.isArray(data.generalChecklist) ? data.generalChecklist : seed.generalChecklist,
       stationChecklists: data.stationChecklists && typeof data.stationChecklists === "object" ? data.stationChecklists : seed.stationChecklists,
+      inventoryItems: Array.isArray(data.inventoryItems) ? data.inventoryItems : seed.inventoryItems,
       inventoryReports: Array.isArray(data.inventoryReports) ? data.inventoryReports : seed.inventoryReports,
       activity: Array.isArray(data.activity) ? data.activity : seed.activity,
       chatMessages: Array.isArray(data.chatMessages) ? data.chatMessages : seed.chatMessages,
@@ -1430,6 +1523,30 @@ function formatCacheTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getDatabaseLabel(remoteWorkspace, session = null) {
+  if (!isSupabaseConfigured) {
+    return "Demo mode";
+  }
+
+  if (remoteWorkspace.status === "loading") {
+    return "Supabase загружается";
+  }
+
+  if (remoteWorkspace.status === "connected") {
+    return "Supabase подключен";
+  }
+
+  if (remoteWorkspace.status === "error") {
+    return "Supabase ошибка";
+  }
+
+  if (!session) {
+    return "Supabase готов, нужен Google вход";
+  }
+
+  return "Supabase ожидает вход";
 }
 
 function getShiftRemaining(now, endsAt) {

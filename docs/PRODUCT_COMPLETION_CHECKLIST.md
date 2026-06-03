@@ -65,8 +65,8 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 
 - [x] Cook can signal low/one-left/empty.
 - [x] Sous-chef can confirm signal in prototype.
-- [ ] Store inventory items in Supabase.
-- [ ] Store inventory reports in Supabase.
+- [x] Prepare inventory item/report Supabase read/write bridge.
+- [ ] Verify inventory item/report persistence against confirmed Supabase project.
 - [ ] Add supplier order workflow.
 - [ ] Add photo upload.
 - [ ] Add par levels and portion impact.
@@ -87,7 +87,8 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 
 - [x] Staff list with quick call.
 - [x] Chat prototype.
-- [ ] Store chat messages.
+- [x] Prepare chat message Supabase write bridge.
+- [ ] Verify chat message persistence against confirmed Supabase project.
 - [ ] Add push notifications.
 - [ ] Add pinned announcements.
 - [ ] Add staff invites.
@@ -98,12 +99,14 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Supabase client prepared.
 - [x] Google login UI prepared.
 - [x] Core Supabase migration prepared.
+- [x] Auth bootstrap migration prepared.
+- [x] Frontend remote data bridge prepared.
 - [ ] Create dedicated Chef OS Supabase project.
 - [ ] Configure Google OAuth.
 - [ ] Add Vercel env vars.
 - [ ] Apply migration to confirmed project.
-- [ ] Seed first restaurant and owner role.
-- [ ] Connect frontend to real data.
+- [ ] Verify first Google login seeds restaurant and owner role.
+- [ ] Verify frontend against real remote data.
 
 ## Mobile / Android / iOS / PWA
 
