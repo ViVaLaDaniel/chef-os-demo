@@ -99,8 +99,7 @@ When a cook is assigned to a station:
 
 ## Button Behavior Rules
 
-- Bell opens notifications.
-- Avatar opens cook profile.
+- Top-right menu opens profile, schedule, staff, notifications, and settings.
 - People metric opens staff list with calls.
 - Task buttons toggle completion and write activity.
 - Stop-list cards open details.
@@ -162,8 +161,8 @@ Every quick action should have:
 - The top status area should show real device time.
 - Next to the time, show countdown to shift end.
 - Under the page title, show date and shift window.
-- The shift screen may show a compact schedule entry point, but it must not place a wide calendar strip in the main flow if that creates horizontal page overflow.
-- Full cook schedule should live in a dedicated sheet/tab with its own vertical layout.
+- Full cook schedule lives in the top-right menu as a dedicated vertical sheet.
+- Do not place a wide calendar strip in the main flow if that creates horizontal page overflow.
 - Later, shift time and schedule data must come from Supabase, not hardcoded demo data.
 
 ## Safety And Simplicity

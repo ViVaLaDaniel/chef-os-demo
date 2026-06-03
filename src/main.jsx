@@ -12,12 +12,14 @@ import {
   History,
   Home,
   ListChecks,
+  Menu,
   MessageCircle,
   Package,
   Phone,
   Plus,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   ShoppingBasket,
   Sparkles,
@@ -264,6 +266,9 @@ function App() {
   const [staffOpen, setStaffOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const [scheduleOpen, setScheduleOpen] = React.useState(false);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [topMenuOpen, setTopMenuOpen] = React.useState(false);
   const [quickPanelOpen, setQuickPanelOpen] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [session, setSession] = React.useState(null);
@@ -384,7 +389,7 @@ function App() {
     <main className="min-h-screen overflow-x-hidden px-3 py-3 text-slate-900 sm:px-6">
       <section className="relative mx-auto flex h-[calc(100dvh-24px)] w-full max-w-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft sm:max-w-md lg:max-w-5xl">
         <StatusBar />
-        <AppHeader title={screenTitle} activeTab={activeTab} onNotifications={() => setNotificationsOpen(true)} onProfile={() => setProfileOpen(true)} />
+        <AppHeader title={screenTitle} activeTab={activeTab} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
           <AuthStatus session={session} loading={authLoading} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
@@ -417,8 +422,43 @@ function App() {
           {activeTab === "chat" && <Chat />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
+        {topMenuOpen && (
+          <TopMenuSheet
+            onClose={() => setTopMenuOpen(false)}
+            onOpenProfile={() => {
+              setTopMenuOpen(false);
+              setProfileOpen(true);
+            }}
+            onOpenNotifications={() => {
+              setTopMenuOpen(false);
+              setNotificationsOpen(true);
+            }}
+            onOpenSchedule={() => {
+              setTopMenuOpen(false);
+              setScheduleOpen(true);
+            }}
+            onOpenStaff={() => {
+              setTopMenuOpen(false);
+              setStaffOpen(true);
+            }}
+            onOpenSettings={() => {
+              setTopMenuOpen(false);
+              setSettingsOpen(true);
+            }}
+          />
+        )}
         {profileOpen && <ProfileSheet cook={currentCook} onClose={() => setProfileOpen(false)} setSelectedStation={setSelectedStation} />}
         {notificationsOpen && <NotificationsSheet activity={activity} onClose={() => setNotificationsOpen(false)} />}
+        {scheduleOpen && (
+          <ScheduleSheet
+            onClose={() => setScheduleOpen(false)}
+            onOpenStaff={() => {
+              setScheduleOpen(false);
+              setStaffOpen(true);
+            }}
+          />
+        )}
+        {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
@@ -471,7 +511,7 @@ function StatusBar() {
   );
 }
 
-function AppHeader({ title, activeTab, onNotifications, onProfile }) {
+function AppHeader({ title, activeTab, onMenu }) {
   const now = useNow();
 
   return (
@@ -483,12 +523,9 @@ function AppHeader({ title, activeTab, onNotifications, onProfile }) {
           <p className="mt-1 text-sm font-bold text-slate-500">{formatDate(now)} · {currentShift.title} {currentShift.startsAt}-{currentShift.endsAt}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onNotifications} className="grid h-12 w-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-label="Уведомления">
-            <Bell size={21} />
-          </button>
-          <button onClick={onProfile} className="relative grid h-12 w-12 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white" aria-label="Профиль повара">
-            {currentCook.avatar}
-            <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-slate-50 bg-green-500" />
+          <button onClick={onMenu} className="relative flex h-12 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm" aria-label="Открыть меню">
+            <Menu size={24} />
+            <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border-2 border-slate-50 bg-amber-500 text-[11px] font-black">{currentCook.avatar}</span>
           </button>
         </div>
       </div>
@@ -822,6 +859,89 @@ function StaffSheet({ onClose, setToast }) {
               <Phone size={22} />
             </a>
           </article>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function TopMenuSheet({ onClose, onOpenProfile, onOpenNotifications, onOpenSchedule, onOpenStaff, onOpenSettings }) {
+  const menuItems = [
+    { label: "Профиль", description: `${currentCook.name} · ${currentCook.station}`, icon: Users, onClick: onOpenProfile },
+    { label: "График", description: "Смены, повара, нагрузка", icon: Clock3, onClick: onOpenSchedule },
+    { label: "Люди", description: "Кто сейчас на смене", icon: ChefHat, onClick: onOpenStaff },
+    { label: "Уведомления", description: "Сигналы и события смены", icon: Bell, onClick: onOpenNotifications },
+    { label: "Настройки", description: "Роль, язык, ресторан, база", icon: Settings, onClick: onOpenSettings },
+  ];
+
+  return (
+    <Sheet onClose={onClose} title="Меню" eyebrow="Chef OS">
+      <div className="space-y-2">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button key={item.label} onClick={item.onClick} className="flex min-h-16 w-full items-center gap-3 rounded-2xl bg-slate-50 p-3 text-left">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-900 text-white">
+                <Icon size={22} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-black text-slate-950">{item.label}</span>
+                <span className="block text-sm font-semibold text-slate-500">{item.description}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+}
+
+function ScheduleSheet({ onClose, onOpenStaff }) {
+  const scheduleRows = [
+    { day: "Сегодня, 03 июня", shift: "11:00-22:00", load: "Пик 18:30-21:00", team: "5 поваров", station: "Все цеха" },
+    { day: "Чт, 04 июня", shift: "10:00-23:00", load: "Банкет", team: "7 поваров", station: "Горячий + Pass усиление" },
+    { day: "Пт, 05 июня", shift: "12:00-00:00", load: "Высокая", team: "8 поваров", station: "Все цеха" },
+    { day: "Сб, 06 июня", shift: "12:00-00:00", load: "Полная посадка", team: "9 поваров", station: "Все цеха + суши" },
+  ];
+
+  return (
+    <Sheet onClose={onClose} title="График" eyebrow="Смены кухни">
+      <div className="space-y-3">
+        {scheduleRows.map((row) => (
+          <article key={row.day} className="rounded-3xl bg-slate-50 p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-black text-slate-950">{row.day}</p>
+                <p className="text-sm font-bold text-slate-500">{row.shift} · {row.load}</p>
+              </div>
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">{row.team}</span>
+            </div>
+            <p className="text-sm font-bold text-slate-700">{row.station}</p>
+            <button onClick={onOpenStaff} className="mt-3 min-h-12 w-full rounded-2xl bg-slate-900 px-4 text-sm font-black text-white">
+              Показать людей
+            </button>
+          </article>
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function SettingsSheet({ onClose }) {
+  return (
+    <Sheet onClose={onClose} title="Настройки" eyebrow="Пока демо">
+      <div className="space-y-3">
+        {[
+          ["Ресторан", "Chef OS Demo"],
+          ["Роль", currentCook.role],
+          ["Язык", "Русский"],
+          ["База", isSupabaseConfigured ? "Supabase подключен" : "Demo mode"],
+          ["Мобильное приложение", "PWA/APK в roadmap"],
+        ].map(([label, value]) => (
+          <div key={label} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4">
+            <span className="text-sm font-black text-slate-500">{label}</span>
+            <span className="text-right text-sm font-black text-slate-950">{value}</span>
+          </div>
         ))}
       </div>
     </Sheet>
