@@ -25,6 +25,8 @@ import {
   Sparkles,
   Users,
   Utensils,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react";
 import "./index.css";
@@ -273,6 +275,7 @@ function App() {
   const [toast, setToast] = React.useState("");
   const [session, setSession] = React.useState(null);
   const [authLoading, setAuthLoading] = React.useState(false);
+  const isOnline = useOnlineStatus();
 
   React.useEffect(() => {
     if (!supabase) return undefined;
@@ -391,7 +394,7 @@ function App() {
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
-          <AuthStatus session={session} loading={authLoading} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
+          <AuthStatus session={session} loading={authLoading} isOnline={isOnline} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
             <ShiftScreen
               tasks={tasks}
@@ -471,14 +474,19 @@ function App() {
   );
 }
 
-function AuthStatus({ session, loading, onSignIn, onSignOut }) {
+function AuthStatus({ session, loading, isOnline, onSignIn, onSignOut }) {
   const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
+  const NetworkIcon = isOnline ? Wifi : WifiOff;
 
   return (
     <section className="mb-4 flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-white p-3 shadow-sm">
       <div className="min-w-0">
         <p className="text-xs font-black uppercase tracking-wide text-slate-500">{isSupabaseConfigured ? "Общая база" : "Demo mode"}</p>
         <p className="truncate text-sm font-black text-slate-950">{session ? userLabel : isSupabaseConfigured ? "Войдите через Google" : "Supabase env не задан"}</p>
+        <p className={`mt-1 inline-flex items-center gap-1 text-xs font-black ${isOnline ? "text-green-600" : "text-amber-600"}`}>
+          <NetworkIcon size={14} />
+          {isOnline ? "Online" : "Offline кеш"}
+        </p>
       </div>
       <button
         onClick={session ? onSignOut : onSignIn}
@@ -1284,6 +1292,30 @@ function useNow() {
   return now;
 }
 
+function useOnlineStatus() {
+  const [isOnline, setIsOnline] = React.useState(() => navigator.onLine);
+
+  React.useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
 function formatTime(date) {
   return new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit",
@@ -1386,5 +1418,19 @@ function BottomNav({ activeTab, setActiveTab }) {
     </nav>
   );
 }
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+      console.error("Chef OS service worker registration failed", error);
+    });
+  });
+}
+
+registerServiceWorker();
 
 createRoot(document.getElementById("root")).render(<App />);

@@ -155,6 +155,7 @@ Every quick action should have:
 - FAB must sit above navigation and not cover list actions.
 - Sheets must leave enough top room and be scrollable.
 - Critical actions use red, active/in-progress amber, complete green.
+- The auth/status card shows whether the client is online or using offline cache.
 
 ## Time And Schedule Logic
 

@@ -30,8 +30,8 @@
 
 ## Mobile And Web
 
-- Add PWA manifest and install flow.
-- Add offline cache for recipes, stations, and current shift.
+- Add install prompt flow on top of the prepared PWA manifest.
+- Add structured offline cache for recipes, stations, and current shift.
 - Add queued offline actions for inventory signals and task completion.
 - Evaluate Capacitor for Android/iOS packaging.
 - Add camera/gallery flow for inventory report photos.

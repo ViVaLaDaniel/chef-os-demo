@@ -107,8 +107,10 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 
 ## Mobile / Android / iOS / PWA
 
-- [ ] Add PWA manifest.
-- [ ] Add offline cache for current shift, recipes, station guides.
+- [x] Add PWA manifest.
+- [x] Add basic app-shell offline cache.
+- [x] Add online/offline network indicator.
+- [ ] Add offline cache for current shift, recipes, station guides as structured data.
 - [ ] Add offline action queue.
 - [ ] Add Capacitor Android wrapper.
 - [ ] Build debug APK for testing.

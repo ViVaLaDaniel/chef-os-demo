@@ -19,6 +19,21 @@ http://127.0.0.1:5173
 npm run build
 ```
 
+## PWA Verification
+
+The production build copies these static PWA assets from `public/`:
+
+- `manifest.webmanifest`
+- `service-worker.js`
+- `offline.html`
+- `pwa-icon.svg`
+
+After running the app through `npm run dev` or a production preview, check:
+
+- the app renders an online/offline indicator in the auth/status card;
+- the service worker registers in a supported browser;
+- a previously loaded app shell can reopen when network is unavailable.
+
 ## Git
 
 ```bash
