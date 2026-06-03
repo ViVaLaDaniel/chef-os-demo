@@ -265,7 +265,7 @@ const messages = [
 const OPERATIONAL_CACHE_KEY = "chef-os-demo:operational-cache";
 const OPERATIONAL_CACHE_VERSION = 1;
 
-function App() {
+export function App() {
   const initialOperationalState = React.useMemo(readOperationalCache, []);
   const [activeTab, setActiveTab] = React.useState("shift");
   const [tasks, setTasks] = React.useState(initialOperationalState.tasks);
@@ -1737,4 +1737,7 @@ function registerServiceWorker() {
 
 registerServiceWorker();
 
-createRoot(document.getElementById("root")).render(<App />);
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  createRoot(rootElement).render(<App />);
+}
