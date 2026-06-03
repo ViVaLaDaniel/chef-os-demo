@@ -332,7 +332,7 @@ create policy "inventory_items_read_members" on public.inventory_items for selec
 create policy "inventory_items_write_leadership" on public.inventory_items for all to authenticated using (app_private.has_restaurant_role(restaurant_id, array['owner','chef','sous_chef','purchaser','admin']::public.app_role[])) with check (app_private.has_restaurant_role(restaurant_id, array['owner','chef','sous_chef','purchaser','admin']::public.app_role[]));
 
 create policy "inventory_reports_read_members" on public.inventory_reports for select to authenticated using (app_private.is_restaurant_member(restaurant_id));
-create policy "inventory_reports_insert_members" on public.inventory_reports for insert to authenticated with check (app_private.is_restaurant_member(restaurant_id));
+create policy "inventory_reports_insert_members" on public.inventory_reports for insert to authenticated with check (app_private.is_restaurant_member(restaurant_id) and (reported_by = auth.uid() or reported_by is null));
 create policy "inventory_reports_update_leadership" on public.inventory_reports for update to authenticated using (app_private.has_restaurant_role(restaurant_id, array['owner','chef','sous_chef','purchaser','admin']::public.app_role[])) with check (app_private.has_restaurant_role(restaurant_id, array['owner','chef','sous_chef','purchaser','admin']::public.app_role[]));
 
 create policy "recipes_read_members" on public.recipes for select to authenticated using (app_private.is_restaurant_member(restaurant_id));
