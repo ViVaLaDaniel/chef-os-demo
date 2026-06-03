@@ -156,6 +156,7 @@ Every quick action should have:
 - Sheets must leave enough top room and be scrollable.
 - Critical actions use red, active/in-progress amber, complete green.
 - The auth/status card shows whether the client is online or using offline cache.
+- Demo operational actions persist locally across reload through a versioned offline snapshot.
 
 ## Time And Schedule Logic
 
@@ -165,6 +166,7 @@ Every quick action should have:
 - Full cook schedule lives in the top-right menu as a dedicated vertical sheet.
 - Do not place a wide calendar strip in the main flow if that creates horizontal page overflow.
 - Later, shift time and schedule data must come from Supabase, not hardcoded demo data.
+- Until Supabase is connected, local offline state is only a client-side continuity layer and must not be treated as multi-user truth.
 
 ## Safety And Simplicity
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "chef-os-v1";
+const CACHE_VERSION = "chef-os-v2";
 const APP_SHELL = [
   "/",
   "/index.html",

@@ -253,13 +253,22 @@ const messages = [
   { id: 3, from: "Ирина", text: "Соус бер блан готов, держу на водяной.", mine: false, time: "10:24" },
 ];
 
+const OPERATIONAL_CACHE_KEY = "chef-os-demo:operational-cache";
+const OPERATIONAL_CACHE_VERSION = 1;
+
 function App() {
+  const initialOperationalState = React.useMemo(readOperationalCache, []);
   const [activeTab, setActiveTab] = React.useState("shift");
-  const [tasks, setTasks] = React.useState(initialTasks);
-  const [generalChecklist, setGeneralChecklist] = React.useState(initialGeneralChecklist);
-  const [stationChecklists, setStationChecklists] = React.useState(initialStationChecklists);
-  const [activity, setActivity] = React.useState(initialActivity);
-  const [inventoryReports, setInventoryReports] = React.useState([]);
+  const [tasks, setTasks] = React.useState(initialOperationalState.tasks);
+  const [generalChecklist, setGeneralChecklist] = React.useState(initialOperationalState.generalChecklist);
+  const [stationChecklists, setStationChecklists] = React.useState(initialOperationalState.stationChecklists);
+  const [activity, setActivity] = React.useState(initialOperationalState.activity);
+  const [inventoryReports, setInventoryReports] = React.useState(initialOperationalState.inventoryReports);
+  const [chatMessages, setChatMessages] = React.useState(initialOperationalState.chatMessages);
+  const [cacheStatus, setCacheStatus] = React.useState({
+    savedAt: initialOperationalState.savedAt,
+    source: initialOperationalState.source,
+  });
   const [query, setQuery] = React.useState("");
   const [recipeFilter, setRecipeFilter] = React.useState("Все");
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
@@ -292,6 +301,21 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  React.useEffect(() => {
+    const savedAt = writeOperationalCache({
+      tasks,
+      generalChecklist,
+      stationChecklists,
+      inventoryReports,
+      activity,
+      chatMessages,
+    });
+
+    if (savedAt) {
+      setCacheStatus({ savedAt, source: "cache" });
+    }
+  }, [activity, chatMessages, generalChecklist, inventoryReports, stationChecklists, tasks]);
 
   async function handleGoogleSignIn() {
     if (!isSupabaseConfigured) {
@@ -394,7 +418,7 @@ function App() {
         <StatusBar />
         <AppHeader title={screenTitle} activeTab={activeTab} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
-          <AuthStatus session={session} loading={authLoading} isOnline={isOnline} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
+          <AuthStatus session={session} loading={authLoading} isOnline={isOnline} cacheStatus={cacheStatus} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
             <ShiftScreen
               tasks={tasks}
@@ -422,7 +446,7 @@ function App() {
           )}
           {activeTab === "inventory" && <InventoryScreen reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
           {activeTab === "stations" && <StationsScreen stationChecklists={stationChecklists} setSelectedStation={setSelectedStation} />}
-          {activeTab === "chat" && <Chat />}
+          {activeTab === "chat" && <Chat messages={chatMessages} setMessages={setChatMessages} />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
         {topMenuOpen && (
@@ -474,9 +498,10 @@ function App() {
   );
 }
 
-function AuthStatus({ session, loading, isOnline, onSignIn, onSignOut }) {
+function AuthStatus({ session, loading, isOnline, cacheStatus, onSignIn, onSignOut }) {
   const userLabel = session?.user?.user_metadata?.full_name || session?.user?.email;
   const NetworkIcon = isOnline ? Wifi : WifiOff;
+  const cacheLabel = cacheStatus.savedAt ? `Смена сохранена ${formatCacheTime(cacheStatus.savedAt)}` : "Локальный кеш готов";
 
   return (
     <section className="mb-4 flex min-h-16 items-center justify-between gap-3 rounded-3xl bg-white p-3 shadow-sm">
@@ -487,6 +512,7 @@ function AuthStatus({ session, loading, isOnline, onSignIn, onSignOut }) {
           <NetworkIcon size={14} />
           {isOnline ? "Online" : "Offline кеш"}
         </p>
+        <p className="mt-0.5 text-xs font-bold text-slate-400">{cacheLabel}</p>
       </div>
       <button
         onClick={session ? onSignOut : onSignIn}
@@ -814,8 +840,7 @@ function Recipes({ filter, setFilter, recipes, query, setQuery, setSelectedRecip
   );
 }
 
-function Chat() {
-  const [chatMessages, setChatMessages] = React.useState(messages);
+function Chat({ messages: chatMessages, setMessages: setChatMessages }) {
   const [draft, setDraft] = React.useState("");
 
   function sendMessage() {
@@ -1281,6 +1306,75 @@ function formatProgress(progress) {
   return `${progress.done}/${progress.total}`;
 }
 
+function createSeedOperationalState() {
+  return {
+    tasks: initialTasks,
+    generalChecklist: initialGeneralChecklist,
+    stationChecklists: initialStationChecklists,
+    inventoryReports: [],
+    activity: initialActivity,
+    chatMessages: messages,
+    savedAt: null,
+    source: "seed",
+  };
+}
+
+function readOperationalCache() {
+  const seed = createSeedOperationalState();
+
+  try {
+    const rawCache = window.localStorage.getItem(OPERATIONAL_CACHE_KEY);
+    if (!rawCache) {
+      return seed;
+    }
+
+    const parsedCache = JSON.parse(rawCache);
+    if (parsedCache?.version !== OPERATIONAL_CACHE_VERSION || !parsedCache?.data) {
+      return seed;
+    }
+
+    const data = parsedCache.data;
+
+    return {
+      tasks: Array.isArray(data.tasks) ? data.tasks : seed.tasks,
+      generalChecklist: Array.isArray(data.generalChecklist) ? data.generalChecklist : seed.generalChecklist,
+      stationChecklists: data.stationChecklists && typeof data.stationChecklists === "object" ? data.stationChecklists : seed.stationChecklists,
+      inventoryReports: Array.isArray(data.inventoryReports) ? data.inventoryReports : seed.inventoryReports,
+      activity: Array.isArray(data.activity) ? data.activity : seed.activity,
+      chatMessages: Array.isArray(data.chatMessages) ? data.chatMessages : seed.chatMessages,
+      savedAt: typeof parsedCache.savedAt === "string" ? parsedCache.savedAt : null,
+      source: "cache",
+    };
+  } catch {
+    return seed;
+  }
+}
+
+function writeOperationalCache(snapshot) {
+  try {
+    const savedAt = new Date().toISOString();
+
+    window.localStorage.setItem(
+      OPERATIONAL_CACHE_KEY,
+      JSON.stringify({
+        version: OPERATIONAL_CACHE_VERSION,
+        savedAt,
+        data: {
+          currentShift,
+          staff,
+          recipes,
+          stationGuides,
+          ...snapshot,
+        },
+      })
+    );
+
+    return savedAt;
+  } catch {
+    return null;
+  }
+}
+
 function useNow() {
   const [now, setNow] = React.useState(() => new Date());
 
@@ -1329,6 +1423,13 @@ function formatDate(date) {
     day: "2-digit",
     month: "long",
   }).format(date);
+}
+
+function formatCacheTime(value) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function getShiftRemaining(now, endsAt) {

@@ -34,6 +34,32 @@ After running the app through `npm run dev` or a production preview, check:
 - the service worker registers in a supported browser;
 - a previously loaded app shell can reopen when network is unavailable.
 
+## Local Offline State
+
+The frontend stores the demo operational snapshot in localStorage under:
+
+```text
+chef-os-demo:operational-cache
+```
+
+The snapshot is versioned and includes current shift reference data plus mutable local state:
+
+- shift tasks;
+- general and station checklists;
+- inventory reports;
+- activity log;
+- chat messages;
+- staff, recipes, and station guides for offline reference.
+
+Manual check:
+
+1. Open the app.
+2. Create an inventory signal or complete a task.
+3. Reload the page.
+4. Confirm the local action is still visible.
+
+This is not a remote sync queue yet. Supabase writes still need a dedicated Chef OS Supabase project and explicit sync logic.
+
 ## Git
 
 ```bash

@@ -14,7 +14,7 @@
 
 - Persist general and station checklist completion to Supabase.
 - Replace local seed data with Supabase reads.
-- Add loading, empty, error, and offline states for every screen.
+- Add loading, empty, error, and backend-sync states for every screen.
 - Persist inventory reports to `inventory_reports`.
 - Persist shift task completion to `shift_tasks`.
 - Persist chat messages to `channel_messages`.
@@ -31,8 +31,7 @@
 ## Mobile And Web
 
 - Add install prompt flow on top of the prepared PWA manifest.
-- Add structured offline cache for recipes, stations, and current shift.
-- Add queued offline actions for inventory signals and task completion.
+- Add Supabase sync queue for locally cached inventory signals and task completion.
 - Evaluate Capacitor for Android/iOS packaging.
 - Add camera/gallery flow for inventory report photos.
 
