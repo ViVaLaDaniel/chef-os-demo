@@ -108,7 +108,9 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Verify first Google login seeds restaurant and owner role.
 - [x] Verify frontend against real remote data.
 - [x] Verify remote task completion write.
-- [ ] Verify remote writes for inventory reports and chat.
+- [x] Verify remote inventory report create and confirm writes.
+- [x] Verify remote chat message write.
+- [ ] Add admin/demo reset action for pilot data cleanup.
 
 ## Mobile / Android / iOS / PWA
 

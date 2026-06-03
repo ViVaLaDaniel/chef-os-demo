@@ -4,16 +4,16 @@
 
 - Keep `docs/INTERACTION_LOGIC.md` aligned with UI behavior.
 - Keep `docs/PRODUCT_COMPLETION_CHECKLIST.md` updated after every product iteration.
-- Verify remote writes for inventory reports and chat against the production Supabase project.
+- Decide whether to keep demo verification rows or add an admin reset action for pilot demos.
 
 ## Frontend Integration
 
 - Persist general and station checklist completion to Supabase.
 - Replace remaining local seed data with Supabase reads.
 - Add loading, empty, error, and backend-sync states for every screen.
-- Verify inventory reports persist to `inventory_reports` in production.
+- Verify inventory reports persist to `inventory_reports` in production. Completed on 2026-06-03 for `Соевый соус`.
 - Verify shift task completion persists to `shift_tasks` in production. Completed on 2026-06-03 for `Принять рыбу и температуру`.
-- Verify chat messages persist to `channel_messages` in production.
+- Verify chat messages persist to `channel_messages` in production. Completed on 2026-06-03 with `Тест sync: склад подтвержден`.
 - Load station process guides from `stations` and `station_processes`.
 
 ## Roles

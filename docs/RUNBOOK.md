@@ -140,3 +140,10 @@ Production smoke test:
 3. Sign in with the configured Google test account.
 4. Confirm the auth/status card shows `Supabase подключен`.
 5. Confirm the activity log contains `Создан demo workspace после Google входа` for a first login.
+
+Production write smoke checks:
+
+1. In `Смена`, toggle a remote task and confirm `shift_tasks.status` changes.
+2. In `Склад`, create an inventory signal and confirm an `inventory_reports` row appears.
+3. Confirm the inventory signal as sous-chef and verify `inventory_reports.status = confirmed`.
+4. In `Чат`, send a message and verify a `channel_messages` row appears.

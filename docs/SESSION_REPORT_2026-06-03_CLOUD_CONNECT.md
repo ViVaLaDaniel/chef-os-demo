@@ -19,6 +19,8 @@
 - Verified Google login in production.
 - Verified first login created the demo workspace in Supabase.
 - Verified remote shift task completion write from production UI to Supabase.
+- Verified remote inventory report create and confirm writes from production UI to Supabase.
+- Verified remote chat message write from production UI to Supabase.
 - Updated docs and runbook with cloud resource IDs.
 
 ## Verification
@@ -30,6 +32,8 @@
 - `curl.exe -I https://chef-os-demo.vercel.app` returned `200 OK`.
 - Browser smoke test showed `Daniel Zamiatin` and `Supabase подключен`.
 - Production UI task toggle changed `Принять рыбу и температуру` to `done` in `shift_tasks` with `completed_at`.
+- Production inventory signal created `Соевый соус` report with `level = empty`, then confirmation changed it to `status = confirmed` with `confirmed_at`.
+- Production chat sent `Тест sync: склад подтвержден` and created a `channel_messages` row from `Chef`.
 - Database counts after login:
   - restaurants: 1
   - restaurant members: 1
@@ -41,7 +45,7 @@
 
 ## Remaining Checks
 
-- Verify remote writes for inventory reports and chat.
+- Add admin/demo reset action for pilot data cleanup.
 - Decide whether to move the Google OAuth app from testing mode to production after privacy/terms pages are ready.
 
 ## Secret Handling
