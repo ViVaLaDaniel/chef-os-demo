@@ -24,7 +24,7 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Show assigned station.
 - [x] Load signed-in account name from Google/Supabase.
 - [x] Add signed-in account photo in the auth/status card.
-- [ ] Load operational cook profile from Google/Supabase membership.
+- [x] Load operational cook profile from Google/Supabase membership. Completed on 2026-06-04.
 - [ ] Add language preference.
 - [ ] Add station skill tags.
 - [ ] Add emergency contact visibility rules.
@@ -77,12 +77,12 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 
 - [x] Recipe list and details.
 - [x] Steps, allergens, yield, cost.
-- [ ] Store recipes and steps in Supabase.
+- [x] Store recipes and steps in Supabase. Completed on 2026-06-04.
 - [ ] Add recipe versions.
 - [ ] Add photo standards.
 - [ ] Add substitutions.
 - [ ] Add station-specific recipe filters.
-- [ ] Add cost recalculation from inventory prices.
+- [x] Add cost recalculation from inventory prices. Completed on 2026-06-04.
 
 ## Staff And Communication
 
@@ -145,3 +145,11 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [ ] Create demo script.
 - [ ] Create pricing hypothesis.
 - [ ] Decide MVP boundary for paid pilot.
+
+## Banquet & Event Menus
+
+- [ ] Design Database schema for Events (events, event_recipes).
+- [ ] Build Banquet Menu builder UI to select recipes and scale portions.
+- [ ] Calculate cumulative ingredients gross/net weight (Purchase Prep list).
+- [ ] Calculate overall event food cost, margin, and guest price.
+- [ ] Auto-generate prep checklists (Prep List) for stations.

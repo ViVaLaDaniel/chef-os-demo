@@ -22,23 +22,27 @@ The product is not a decorative recipe app. It is a shift operations tool for pr
 
 ## Current Scope
 
-The current deployed app is a frontend prototype with:
+The app is a fully functional web-based and installable PWA prototype connected to Supabase:
 
-- shift command screen;
-- staff sheet with quick calls;
-- inventory signal UI;
-- station guide UI;
-- recipe detail sheets;
-- chat mock;
-- activity log;
-- Supabase client/auth preparation;
-- local Supabase migration for the target data model.
+- **Auth**: Google OAuth provider integration, loading profiles and avatars dynamically.
+- **Shift Command Screen**: Real-time shift tasks, general checklists, and station guides.
+- **Base Tab**: Dynamic database of ingredients with supplier details, pricing, and loss percentage.
+- **Costing Calculator**: Recipe composition editor (gross/net weight) with live food cost, margin, and markup calculations, plus high food cost alert notifications (>30%).
+- **Inventory Signals**: Quick one-tap stock reports confirmed by managers.
+- **Kitchen Chat**: Persistent communication channel for all kitchen stations.
+- **Activity Log**: Auditable action logging.
+- **Offline Shell**: PWA service-worker offline app shell caching and localStorage fallback.
 
-## Not Yet Implemented
+## Not Yet Implemented / In Progress
 
-- real remote Supabase database connection;
-- Google OAuth provider configuration;
-- persistent data loading/saving;
-- role-based live UI permissions;
-- PWA/mobile build;
-- offline sync.
+- Offline sync queue for action replay when recovering from connection loss.
+- Capacitor Android & iOS wrappers for app store compilation.
+- Multi-restaurant workspace onboarding flow.
+- Process and checklist template creation editor for chefs in settings.
+
+## Future Directions: Banquet & Event Menus
+
+To support large-scale kitchen operations, we are planning a dedicated Banquet Menu Builder:
+- **Banquet Events**: Separate menus containing selected recipes with scaled portion requirements.
+- **Cumulative Prep & Purchase Lists**: Aggregated ingredients calculator to generate single-click purchase sheets (factoring in loss percentages) and distributed mise en place prep tasks.
+- **Event Economics**: Aggregated costing calculations to determine overall event margin and pricing templates.

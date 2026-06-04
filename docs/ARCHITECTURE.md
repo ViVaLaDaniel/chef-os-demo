@@ -11,30 +11,18 @@
 
 ## Current Runtime Shape
 
-The app currently renders mostly from local seed data in `src/main.jsx`.
+The app is connected to the live Supabase project `zqkwfflhjuckjmxqqheh` in production. It features:
+- **Real-time database integration**: Reads and writes task status, checklists, inventory signals, chat messages, and costing updates dynamically from Supabase.
+- **Offline cache shell**: Uses standard Service Worker PWA manifest to cache application assets and caches the operational state inside `localStorage`.
+- **Demo fallback**: Fallback mock logic is triggered if the Supabase environment is unavailable.
 
-Supabase integration is prepared in:
+## Production Shape & Sync Strategy
 
-- `src/lib/supabase.js`
-- `.env.example`
-- `supabase/migrations/20260602191759_chef_os_core_schema.sql`
-
-Without env vars, the app stays in demo mode and does not create a Supabase client.
-
-## Intended Production Shape
-
-One shared backend should serve:
-
-- website for desktop/laptop management;
-- installable PWA for phones;
-- Android/iOS apps later through Capacitor using the same React codebase.
-
-Data must sync by authenticated account:
-
-- user signs in with Google;
-- app loads restaurant membership and role;
-- app loads current shift, recipes, stations, staff, inventory, reports, messages, and activity log;
-- mobile clients cache critical data locally and sync queued actions when online.
+The app runs on Vercel as a single-page React app and integrates with Supabase via client-side operations:
+- **OAuth authentication**: Google Sign-In populates session details and maps current user memberships.
+- **Role-based views**: Layout elements and actions adapt depending on user roles (Chef/Sous-chef vs. Cook).
+- **Mise en Place & Costing**: Recipe ingredients and costs recalculate dynamically from inventory changes.
+- **Offline states**: Local actions are saved to cache for persistency across reloads. A background sync queue for offline action replay is in development.
 
 ## Interaction Model
 
