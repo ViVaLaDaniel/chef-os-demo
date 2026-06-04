@@ -1,48 +1,104 @@
-# Project Context
+# Контекст проекта (Project Context) — Chef OS
 
-Chef OS is intended to become an operational kitchen command system for chefs, sous-chefs, cooks, and purchasers.
+Chef OS — это мобильная операционная система для управления процессами на профессиональной кухне во время смены. Это рабочий инструмент для шефов, сушефов, линейных поваров и закупщиков, а не просто декоративное приложение с рецептами.
 
-## Product Intent
+---
 
-The product is not a decorative recipe app. It is a shift operations tool for professional kitchens:
+## 1. Концепция и Проблема
 
-- show what is urgent now;
-- show who is working and where;
-- let cooks signal low stock without changing inventory authority;
-- let sous-chefs and chefs confirm issues and create purchase actions;
-- keep station processes and recipe instructions accessible during service;
-- keep activity history for accountability.
+### Проблема на профессиональной кухне
+Работа на профессиональной кухне во время сервиса — это среда высокого давления и скорости. У поваров нет времени искать информацию в общих чатах (Telegram/WhatsApp), перебирать бумажные папки с рецептами, заполнять громоздкие таблицы Excel или сверяться с разрозненными чек-листами.
 
-## Target Users
+**Типичные проблемы:**
+- Повара не знают актуальный стоп-лист вовремя.
+- Подготовка станций (цехов) к сервису нестабильна или не проверяется.
+- Сигналы о нехватке продуктов поступают слишком поздно, когда блюдо уже заказано гостем.
+- Технико-технологические карты (ТТК) и стандарты санитарии лежат в разных местах или недоступны на рабочем месте.
+- Управленцы не видят в реальном времени, какие задачи смены и чек-листы действительно выполнены.
 
-- Chef: full operational control, recipes, staff, suppliers, stock, history.
-- Sous-chef: shift execution, station coordination, stock confirmation.
-- Cook: assigned station tasks, recipes, process guides, stock signals.
-- Purchaser/admin: supplier and stock follow-up.
+### Решение: Chef OS
+Chef OS объединяет ключевые аспекты работы кухни во время смены в одном мобильном интерфейсе, оптимизированном для управления «одной рукой»:
+- **Экран смены (Shift Command)**: единый дашборд срочных задач, стоп-листов и статуса готовности цехов.
+- **Быстрые сигналы (Quick Actions)**: кнопка FAB на экране позволяет повару в 1-2 тапа сообщить о проблеме (закончился продукт, нужен сушеф, задерживается чек) без ручного ввода текста.
+- **Интерактивные ТТК и фудкост**: рецепты привязаны к базе ингредиентов, автоматически рассчитывая себестоимость и маржинальность блюд.
+- **Чек-листы по цехам**: четкое разделение подготовки по станциям (Холодный, Горячий, Суши и т.д.) с контролем выполнения.
 
-## Current Scope
+---
 
-The app is a fully functional web-based and installable PWA prototype connected to Supabase:
+## 2. Целевая аудитория и Ролевая модель
 
-- **Auth**: Google OAuth provider integration, loading profiles and avatars dynamically.
-- **Shift Command Screen**: Real-time shift tasks, general checklists, and station guides.
-- **Base Tab**: Dynamic database of ingredients with supplier details, pricing, and loss percentage.
-- **Costing Calculator**: Recipe composition editor (gross/net weight) with live food cost, margin, and markup calculations, plus high food cost alert notifications (>30%).
-- **Inventory Signals**: Quick one-tap stock reports confirmed by managers.
-- **Kitchen Chat**: Persistent communication channel for all kitchen stations.
-- **Activity Log**: Auditable action logging.
-- **Offline Shell**: PWA service-worker offline app shell caching and localStorage fallback.
+В Chef OS предусмотрено четкое разделение прав и обязанностей:
 
-## Not Yet Implemented / In Progress
+1. **Шеф-повар (Chef)**:
+   - Полный операционный контроль кухни.
+   - Управление меню, ТТК, базой ингредиентов и цен поставщиков.
+   - Настройка шаблонов чек-листов и стандартов цехов.
+   - Просмотр истории активности (аудит-лог).
 
-- Offline sync queue for action replay when recovering from connection loss.
-- Capacitor Android & iOS wrappers for app store compilation.
-- Multi-restaurant workspace onboarding flow.
-- Process and checklist template creation editor for chefs in settings.
+2. **Сушеф (Sous-chef)**:
+   - Координация работы текущей смены.
+   - Контроль выполнения задач по цехам.
+   - Подтверждение сигналов о нехватке продуктов (превращение их в заявки закупщику).
+   - Оперативное управление стоп-листом.
 
-## Future Directions: Banquet & Event Menus
+3. **Линейный повар (Cook)**:
+   - Просмотр задач своей станции, персональных и общих инструкций на смену.
+   - Отметка выполненных задач и прохождение чек-листов подготовки/закрытия.
+   - Быстрый доступ к рецептам (ТТК) и процессам цеха прямо со смартфона.
+   - Быстрая отправка сигналов о нехватке продуктов или блокировках.
 
-To support large-scale kitchen operations, we are planning a dedicated Banquet Menu Builder:
-- **Banquet Events**: Separate menus containing selected recipes with scaled portion requirements.
-- **Cumulative Prep & Purchase Lists**: Aggregated ingredients calculator to generate single-click purchase sheets (factoring in loss percentages) and distributed mise en place prep tasks.
-- **Event Economics**: Aggregated costing calculations to determine overall event margin and pricing templates.
+4. **Закупщик / Администратор (Purchaser / Admin)**:
+   - Контроль подтвержденных сигналов склада и формирование заказов поставщикам.
+   - Управление правами доступа сотрудников и привязкой к ресторану (тенанту).
+
+---
+
+## 3. Отличия от конкурентов
+
+Многие продукты на рынке автоматизации ресторанов закрывают лишь отдельные ниши:
+- Только чек-листы (Platrly, Incheck).
+- Только калькуляция рецептов и фудкоста (meez, Parsley).
+- Только складской учет FIFO (ChefTec, COGS-Well).
+- Корпоративные ERP (iiko, r-keeper), которые перегружены и не адаптированы для линейных поваров в процессе сервиса.
+
+**Уникальное предложение Chef OS**: Фокус на реальном времени смены (Service-time Kitchen Command). Приложение связывает ТТК, чек-листы цехов, сигналы по остаткам продуктов и коммуникацию персонала в единый мобильный рабочий процесс.
+
+---
+
+## 4. Текущий статус проекта (Реализовано)
+
+На текущий момент Chef OS представляет собой функциональный прототип PWA, интегрированный с облачной базой данных Supabase:
+- **Авторизация**: Вход через Google OAuth с автоматическим созданием профиля пользователя и привязкой роли владельца/шефа в демо-ресторане.
+- **Экран смены (Смена)**: Интерактивный список задач смены и чек-листов, синхронизируемый с Supabase.
+- **База ингредиентов (База)**: Раздел с базой сырья, ценами поставщиков и процентами потерь (waste/loss) при зачистке.
+- **Интерактивный калькулятор ТТК**: ТТК с детализацией состава (брутто/нетто), автоматическим расчетом себестоимости порции (Food Cost), наценки и маржинальности. Реализованы алерты-предупреждения, если себестоимость блюда превышает 30% от цены продажи.
+- **Сигналы склада (Склад)**: Отправка поварами быстрых отчетов («Закончился», «Осталась 1 шт») и их подтверждение сушефом.
+- **Инструкции и чек-листы цехов (Цеха)**: Инструкции, разделенные по фазам (до сервиса, во время, закрытие).
+- **Кухонный чат (Чат)**: Внутренний чат для координации персонала станций, сохраняющий сообщения в БД.
+- **Локальное кэширование (Offline shell)**: Использование Service Worker для оффлайн-доступа к приложению и кэширование операционного состояния в localStorage.
+
+---
+
+## 5. Ближайшие планы и Вектор развития
+
+Для вывода Chef OS на стадию коммерческого MVP запланированы следующие ключевые шаги:
+
+### 1. Конструктор Банкетов и Мероприятий (Banquet & Event Menus)
+Инструмент для шеф-повара для планирования крупных заказов и банкетов:
+- **События (Events)**: Создание банкетов с указанием даты, количества гостей и статуса.
+- **Расчет ТТК со масштабированием**: Автоматический пересчет веса ингредиентов брутто/нетто под общее количество гостей на мероприятии.
+- **Консолидированный лист закупок (Purchase Prep list)**: Суммирование веса одинаковых ингредиентов по всем блюдам банкета с учетом процента потерь сырья для заказа поставщику в один клик.
+- **Генерация задач на заготовку (Mise en Place Prep)**: Автоматическое распределение задач по цехам подготовки на основе состава блюд.
+- **Экономика банкета**: Расчет общей себестоимости меню банкета, маржи и рекомендуемой стоимости для клиента.
+
+### 2. Рефакторинг архитектуры
+Разделение монолитного файла `src/main.jsx` на модульную структуру:
+- Выделение переиспользуемых UI-компонентов.
+- Разделение экранов (`pages/Shift`, `pages/Recipes`, `pages/Inventory`, `pages/Stations`, `pages/Base`, `pages/Chat`).
+- Перенос логики состояния в Zustand для улучшения масштабируемости и читаемости.
+
+### 3. Оффлайн-очередь синхронизации (Sync Queue)
+Разработка надежного механизма синхронизации, который накапливает действия повара (отметка чек-листа, отправка сигнала склада) в локальной очереди и отправляет их в Supabase при восстановлении интернета.
+
+### 4. Мобильная компиляция
+Интеграция Capacitor для сборки нативных мобильных приложений под Android и iOS для установки через App Store / Google Play и интеграции нативных уведомлений и камеры для фото-отчетов.

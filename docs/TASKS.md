@@ -1,46 +1,57 @@
-# Tasks
+# Задачи (Tasks) — Chef OS
 
-## Immediate
+Этот список отслеживает текущий прогресс разработки, завершенные этапы и приоритетные фичи.
 
-- Keep `docs/INTERACTION_LOGIC.md` aligned with UI behavior.
-- Keep `docs/PRODUCT_COMPLETION_CHECKLIST.md` updated after every product iteration.
+---
 
-## Product Enhancements & Costing (Active)
+## 1. Активные задачи (В процессе)
 
-- [x] Implement ingredient price and waste editing ("Base" tab). Completed on 2026-06-04.
-- [x] Implement dynamic food cost calculation from recipe ingredients. Completed on 2026-06-04.
-- [x] Create recipe ingredients editor in detailed cards. Completed on 2026-06-04.
-- [x] Add high Food Cost warnings (>30% of sales price). Completed on 2026-06-04.
+### Рефакторинг и разделение монолита
+- [ ] Разбить монолитный файл `src/main.jsx` на папки и модульные файлы:
+  - `components/` (кнопки, листы ввода, карточки, BottomNav).
+  - `pages/` (Смена, ТТК, Склад, Цеха, База, Чат).
+  - `store/` (состояние сессии, смена, профиль повара — перенос на Zustand).
+- [ ] Внедрить Zustand для управления глобальным состоянием с кэшированием в localStorage.
 
-## Banquet & Event Menus (Proposed)
+---
 
-- [ ] Design database migrations for `events` and `event_recipes` tables.
-- [ ] Implement data loaders and mapping functions in `chefOsRemote.js` for banquet event events.
-- [ ] Build Banquet sheet/screen UI to configure menus, scale portion sizes, and calculate gross profit margins.
-- [ ] Build consolidated purchasing calculator (aggregate weights with waste factor adjustment) and automated station prep tasks distributor.
+## 2. Модуль «Конструктор Банкетов» (Banquet & Event Planner) — Новая крупная фича
+- [ ] **Проектирование БД**: Создать миграции таблиц `events` и `event_recipes` в Supabase с поддержкой RLS.
+- [ ] **Remote API**: Добавить функции загрузки, создания, редактирования банкетов в `src/lib/chefOsRemote.js`.
+- [ ] **Интерфейс подбора меню**: Разработать экран/лист банкета для добавления рецептов, настройки количества гостей и масштабирования порций.
+- [ ] **Сводный калькулятор закупок**: Сделать расчет общего веса сырья (брутто) для закупки с учетом процента потерь на очистку.
+- [ ] **Авто-генерация Mise en Place**: Сделать распределение задач по подготовке заготовок по соответствующим цехам.
+- [ ] **Экономика банкета**: Сделать расчет общей маржинальности банкета и наценки.
 
-## Frontend Integration & Mobile
+---
 
-- [x] Persist general and station checklist completion to Supabase. Completed on 2026-06-04.
-- [x] Replace remaining local seed data with Supabase reads. Completed on 2026-06-04.
-- [ ] Add loading, empty, error, and backend-sync states for every screen.
-- [x] Verify inventory reports persist to `inventory_reports` in production. Completed on 2026-06-03.
-- [x] Verify shift task completion persists to `shift_tasks` in production. Completed on 2026-06-03.
-- [x] Verify chat messages persist to `channel_messages` in production. Completed on 2026-06-03.
-- [x] Load station process guides from `stations` and `station_processes`. Completed on 2026-06-04.
-- [x] Load operational cook profile and role from Supabase membership instead of the fixed demo cook. Completed on 2026-06-04.
+## 3. Технические и мобильные доработки
+- [ ] Добавить состояния загрузки, ошибок и пустых списков (empty states) для экранов.
+- [ ] Реализовать оффлайн-очередь синхронизации (Sync Queue) действий в Supabase при обрыве связи.
+- [ ] Добавить обработчик всплывающего окна (Install Prompt) для PWA.
+- [ ] Оценить и интегрировать Capacitor для нативной сборки под Android и iOS.
+- [ ] Подключить доступ к камере для фото-отчетов о недостачах на складе.
 
-## Roles
+---
 
-- Chef: all operational actions.
-- Sous-chef: shift execution, reports confirmation, process updates.
-- Cook: read recipes/processes, complete own tasks, create stock signals.
-- Purchaser: supplier and order-related actions.
-- Admin: workspace/member settings.
+## 4. Завершенные задачи (Completed)
 
-## Mobile And Web
+* **2026-06-04: Себестоимость и Ингредиенты (Аудит от Jules)**
+  * [x] Добавлена новая вкладка «База» (ингредиенты, цены поставщиков, процент отходов).
+  * [x] Реализован динамический расчет фудкоста порции блюда на основе цен сырья.
+  * [x] Разработан редактор состава рецептов ТТК (брутто/нетто в граммах).
+  * [x] Интегрирован алерт превышения критического фудкоста (>30% от цены продажи блюда).
+  * [x] Подключено сохранение результатов чек-листов подготовки смены в Supabase.
+  * [x] Загрузка профиля и роли повара перенесена на роли членства в Supabase.
 
-- Add install prompt flow on top of the prepared PWA manifest.
-- Add Supabase sync queue for locally cached inventory signals and task completion.
-- Evaluate Capacitor for Android/iOS packaging.
-- Add camera/gallery flow for inventory report photos.
+* **2026-06-03: Синхронизация БД на продакшене**
+  * [x] Проверена и отлажена синхронизация чата (`channel_messages`) с облачной базой Supabase.
+  * [x] Проверена отправка и подтверждение сигналов склада (`inventory_reports`).
+  * [x] Проверена отметка задач смены (`shift_tasks`) с привязкой к Google-профилю.
+  * [x] Реализован механизм полной очистки демо-данных (Pilot Reset) из настроек.
+
+* **2026-06-02: Ядро и PWA-оболочка**
+  * [x] Создана базовая структура таблиц ( рестораны, члены, цеха, ТТК).
+  * [x] Настроен манифест PWA и базовый Service Worker.
+  * [x] Интегрирован вход через Google OAuth.
+  * [x] Подготовлено локальное сохранение сессии в localStorage.

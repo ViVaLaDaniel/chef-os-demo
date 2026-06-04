@@ -1,55 +1,33 @@
-# Decisions
+# Реестр принятых решений (Decisions) — Chef OS
 
-## 2026-06-02: Tenant Model
+Этот документ фиксирует ключевые архитектурные и продуктовые решения с обоснованием причин их принятия.
 
-Decision: use `restaurants` as the tenant root and scope operational tables by `restaurant_id`.
+---
 
-Reason: the same app must support many restaurants/teams without mixing data.
+## 2026-06-02: Модель мультиарендности (Tenant Model)
+* **Решение**: Использовать таблицу `restaurants` в качестве корневого тенанта. Все операционные таблицы (цеха, задачи, ТТК, склад) фильтруются по `restaurant_id`.
+* **Обоснование**: Приложение ориентировано на работу со множеством независимых заведений. Модель гарантирует изоляцию данных и исключает утечки информации между командами.
 
-## 2026-06-02: Cooks Signal, Leads Confirm
+## 2026-06-02: Права изменения остатков: сигналы поваров и контроль сушефов
+* **Решение**: Линейные повара отправляют только сигналы склада о нехватке (`inventory_reports` со статусами `low`, `one_left`, `empty`). Изменение фактических остатков и перевод статусов в заказ (`ordered`, `delivered`) осуществляют только шефы, сушефы или закупщики.
+* **Обоснование**: Во время запары у повара нет времени вводить точный вес или инвентаризировать полки. Быстрый сигнал «закончилось» решает проблему скорости, а подтверждение сушефом исключает ложные закупки.
 
-Decision: cooks create inventory reports instead of directly changing final stock.
+## 2026-06-02: Запрет автозапуска локального Docker Supabase
+* **Решение**: Не использовать `supabase start` для автоматического развертывания локального контейнера в скриптах агентов.
+* **Обоснование**: В Docker Desktop запущены контейнеры других проектов (например, DSGVO Scanner). Автоматический запуск или сброс локальной БД Chef OS может повредить данные параллельных проектов разработчика.
 
-Reason: this reduces chaos during service and preserves chef/sous-chef control.
+## 2026-06-02: Стратегия сборки: Web-first и Capacitor PWA
+* **Решение**: Разрабатывать единое SPA React-приложение на Vite, оптимизированное под мобильные экраны, с последующей упаковкой в нативные приложения под Android/iOS через Capacitor.
+* **Обоснование**: Позволяет использовать одну кодовую базу для сайта, PWA-установки на телефон через браузер и дистрибутивов для магазинов приложений.
 
-## 2026-06-02: Supabase Prepared But Not Applied
+## 2026-06-03: Выделенный облачный контур для демо-базы
+* **Решение**: Создать изолированный проект в Google Cloud (`chef-os-demo-20260603`) и инстанс Supabase (`zqkwfflhjuckjmxqqheh`) специально под демонстрационный стенд Chef OS.
+* **Обоснование**: Полная изоляция от рабочих баз данных других проектов, независимая настройка OAuth-клиентов и лимитов баз данных.
 
-Decision: prepare migration and client wiring, but do not apply to an existing remote project.
+## 2026-06-04: Сохранение кухонного чата и расширение навигации (6 вкладок)
+* **Решение**: Отклонить рекомендацию аудита Jules об удалении чата. Сохранить чат как важный канал связи и расширить нижнюю панель навигации до 6 вкладок, добавив вкладку «База» (Ингредиенты/Поставщики).
+* **Обоснование**: Пользователь (Даниил) подчеркнул, что чат необходим для оперативного общения поваров горячего, холодного цехов, сушефа и шефа во время смены.
 
-Reason: available Supabase projects include unrelated projects, and Chef OS needs a dedicated project.
-
-## 2026-06-02: No Automatic Local Supabase Docker
-
-Decision: do not run local Supabase automatically.
-
-Reason: Docker Desktop may host DSGVO Scanner or other local resources. A previous `supabase start` attempt timed out and was stopped.
-
-## 2026-06-02: Web First, Mobile Later Through Shared React
-
-Decision: keep Vite React as the shared codebase and later add PWA/Capacitor.
-
-Reason: this allows one product surface for desktop web, phone install, Android, and iOS while sharing the same backend.
-
-## 2026-06-03: Dedicated Cloud Demo Stack
-
-Decision: run the Chef OS demo on its own Google Cloud project and Supabase project.
-
-Reason: auth, billing, database, and OAuth settings must be isolated from DSGVO Scanner and other Daniel workspace projects.
-
-Current resources:
-
-- Google Cloud project: `chef-os-demo-20260603`
-- Supabase project ref: `zqkwfflhjuckjmxqqheh`
-- Production Vercel URL: `https://chef-os-demo.vercel.app`
-
-## 2026-06-04: Keep Chat, Add Base as 6th Tab
-
-Decision: Keep the "Chat" tab active for kitchen staff connection and add the "Base" tab as a sixth tab.
-
-Reason: Daniel confirmed that chat is crucial for connecting all staff members on different stations.
-
-## 2026-06-04: Dynamic Recipe Costing & Composition Editor
-
-Decision: Extend `inventory_items` to store costs and losses, create a `recipe_ingredients` link table, and build a full inline editor with high Food Cost warnings (>30%).
-
-Reason: Allows chef and sous-chefs to manage food costs directly, edit recipe compositions, and track margin metrics.
+## 2026-06-04: Динамический расчет себестоимости и предупреждения о фудкосте
+* **Решение**: Добавить в модель таблицу связи `recipe_ingredients` с указанием веса брутто/нетто в граммах, расширить ингредиенты ценой поставщика и процентом потерь. При превышении фудкостом блюда 30% от цены продажи выводить красное предупреждение.
+* **Обоснование**: Это решает главную коммерческую слабость прототипа, обнаруженную во время аудита. Теперь продукт несет прямую экономическую ценность для владельца заведения.
