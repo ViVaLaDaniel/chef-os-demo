@@ -41,3 +41,15 @@ Current resources:
 - Google Cloud project: `chef-os-demo-20260603`
 - Supabase project ref: `zqkwfflhjuckjmxqqheh`
 - Production Vercel URL: `https://chef-os-demo.vercel.app`
+
+## 2026-06-04: Keep Chat, Add Base as 6th Tab
+
+Decision: Keep the "Chat" tab active for kitchen staff connection and add the "Base" tab as a sixth tab.
+
+Reason: Daniel confirmed that chat is crucial for connecting all staff members on different stations.
+
+## 2026-06-04: Dynamic Recipe Costing & Composition Editor
+
+Decision: Extend `inventory_items` to store costs and losses, create a `recipe_ingredients` link table, and build a full inline editor with high Food Cost warnings (>30%).
+
+Reason: Allows chef and sous-chefs to manage food costs directly, edit recipe compositions, and track margin metrics.
