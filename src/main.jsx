@@ -31,6 +31,8 @@ import {
   X,
   Database,
   Scale,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import "./index.css";
 import {
@@ -588,6 +590,7 @@ export function App() {
 
   const handleSwitchWorkspace = () => {
     localStorage.removeItem("chef-os-demo:operational-cache");
+    localStorage.removeItem("chef-os:intro-seen");
     setRemoteWorkspace({ restaurantId: null, restaurantName: null, inviteCode: null, status: "onboarding", message: "Выберите или создайте кухню" });
     setSettingsOpen(false);
     setToast("Выберите или создайте кухню");
@@ -1615,6 +1618,19 @@ function SettingsSheet({ remoteWorkspace, currentCook, resetLoading, onResetDemo
 
         {remoteWorkspace.status === "connected" && (
           <button
+            onClick={() => {
+              localStorage.removeItem("chef-os:intro-seen");
+              alert("Состояние приветствия сброшено. Слайды будут показаны при смене кухни или новом входе.");
+            }}
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50"
+          >
+            <Sparkles size={18} className="text-amber-500 animate-pulse" />
+            Показать приветствие снова
+          </button>
+        )}
+
+        {remoteWorkspace.status === "connected" && (
+          <button
             onClick={onSwitchWorkspace}
             className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50"
           >
@@ -1639,6 +1655,127 @@ function OnboardingScreen({ onCreate, onJoin, onDemo, loading }) {
   const [restName, setRestName] = React.useState("");
   const [inviteCode, setInviteCode] = React.useState("");
   const [mode, setMode] = React.useState(null);
+  const [introSeen, setIntroSeen] = React.useState(() => {
+    return localStorage.getItem("chef-os:intro-seen") === "true";
+  });
+  const [currentSlide, setCurrentSlide] = React.useState(0);
+
+  const finishIntro = () => {
+    localStorage.setItem("chef-os:intro-seen", "true");
+    setIntroSeen(true);
+  };
+
+  const slides = [
+    {
+      id: "shift",
+      title: "Контролируйте смену",
+      description: "Единый экран для всех цехов: горячие задачи, стоп-листы и чек-листы готовности кухни к сервису.",
+      icon: ChefHat,
+      bgColor: "bg-amber-500/10",
+      textColor: "text-amber-600",
+      gradient: "from-amber-500/10 to-orange-500/5",
+    },
+    {
+      id: "inventory",
+      title: "Быстрая связь со складом",
+      description: "Сообщайте су-шефу о заканчивающихся продуктах в один тап прямо во время запары на сервисе.",
+      icon: Package,
+      bgColor: "bg-emerald-500/10",
+      textColor: "text-emerald-600",
+      gradient: "from-emerald-500/10 to-teal-500/5",
+    },
+    {
+      id: "recipes",
+      title: "Себестоимость под контролем",
+      description: "Технико-технологические карты с составом брутто/нетто, наценкой и автоматическим расчетом Food Cost при изменении цен поставщика.",
+      icon: Utensils,
+      bgColor: "bg-rose-500/10",
+      textColor: "text-rose-600",
+      gradient: "from-rose-500/10 to-pink-500/5",
+    },
+    {
+      id: "chat",
+      title: "Слаженная команда",
+      description: "Внутренний чат, который автоматически показывает имя повара и его рабочий цех для мгновенной координации.",
+      icon: MessageCircle,
+      bgColor: "bg-indigo-500/10",
+      textColor: "text-indigo-600",
+      gradient: "from-indigo-500/10 to-blue-500/5",
+    },
+  ];
+
+  if (!introSeen) {
+    const slide = slides[currentSlide];
+    const Icon = slide.icon;
+
+    return (
+      <div className="mx-auto my-6 max-w-md overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-soft backdrop-blur-md transition-all duration-300">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-400">Chef OS Обзор</span>
+          </div>
+          <button
+            onClick={finishIntro}
+            className="text-xs font-black text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            Пропустить
+          </button>
+        </div>
+
+        <div className={`rounded-2xl bg-gradient-to-br ${slide.gradient} p-8 text-center border border-slate-100/50`}>
+          <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] ${slide.bgColor} ${slide.textColor} shadow-inner transition-transform duration-300 hover:scale-110`}>
+            <Icon size={44} className="animate-pulse" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900 leading-tight min-h-[56px] flex items-center justify-center">
+            {slide.title}
+          </h2>
+          <p className="mt-3 text-sm font-semibold text-slate-500 leading-relaxed min-h-[80px]">
+            {slide.description}
+          </p>
+        </div>
+
+        <div className="flex justify-center gap-2 my-6">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`h-2.5 rounded-full transition-all duration-300 ${
+                index === currentSlide ? "w-6 bg-slate-900" : "w-2.5 bg-slate-200 hover:bg-slate-300"
+              }`}
+              aria-label={`Перейти к слайду ${index + 1}`}
+            />
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          {currentSlide > 0 && (
+            <button
+              onClick={() => setCurrentSlide((c) => c - 1)}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 active:scale-[0.98] transition-all"
+              aria-label="Назад"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          
+          <button
+            onClick={() => {
+              if (currentSlide === slides.length - 1) {
+                finishIntro();
+              } else {
+                setCurrentSlide((c) => c + 1);
+              }
+            }}
+            className="flex-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 font-black text-white shadow-md hover:bg-slate-800 active:scale-[0.98] transition-all"
+          >
+            <span>{currentSlide === slides.length - 1 ? "Начать работу" : "Далее"}</span>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto my-6 max-w-md overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-soft backdrop-blur-md">
