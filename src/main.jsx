@@ -44,6 +44,10 @@ import {
   updateRemoteIngredientPrice,
   updateRemoteRecipeCosting,
   updateRemoteRecipeIngredients,
+  createRemoteRestaurant,
+  joinRemoteRestaurantByInviteCode,
+  getRemoteUserMemberships,
+  assignRemoteStaffStation,
 } from "./lib/chefOsRemote";
 import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
 
@@ -364,15 +368,37 @@ export function App() {
     let isCancelled = false;
 
     async function loadWorkspace() {
-      setRemoteWorkspace((current) => ({ ...current, status: "loading", message: "Загружаю базу" }));
+      if (!accountUserId) return;
+      setRemoteWorkspace((current) => ({ ...current, status: "loading", message: "Проверка подписок" }));
 
       try {
+        const memberships = await getRemoteUserMemberships(accountUserId);
+        if (isCancelled) return;
+
+        if (memberships.length === 0) {
+          setRemoteWorkspace({ 
+            restaurantId: null, 
+            restaurantName: null, 
+            inviteCode: null, 
+            status: "onboarding", 
+            message: "Выберите или создайте кухню" 
+          });
+          return;
+        }
+
+        setRemoteWorkspace((current) => ({ ...current, status: "loading", message: "Загружаю базу" }));
         const workspace = await bootstrapAndLoadChefOsWorkspace({ currentUserId: accountUserId });
         if (isCancelled || !workspace) {
           return;
         }
 
-        setRemoteWorkspace({ restaurantId: workspace.restaurantId, status: "connected", message: "Supabase подключен" });
+        setRemoteWorkspace({ 
+          restaurantId: workspace.restaurantId, 
+          restaurantName: workspace.restaurantName,
+          inviteCode: workspace.inviteCode,
+          status: "connected", 
+          message: "Supabase подключен" 
+        });
         setTasks(workspace.tasks.length > 0 ? workspace.tasks : initialTasks);
         setInventoryItems(workspace.inventoryItems.length > 0 ? workspace.inventoryItems : initialInventoryItems);
         setInventoryReports(workspace.inventoryReports);
@@ -400,8 +426,8 @@ export function App() {
         if (isCancelled) {
           return;
         }
-
-        setRemoteWorkspace({ restaurantId: null, status: "error", message: error.message });
+        console.error("Failed to load workspace", error);
+        setRemoteWorkspace({ restaurantId: null, status: "error", message: "Ошибка подключения к базе" });
         setToast(`База недоступна: ${error.message}`);
       }
     }
@@ -503,12 +529,101 @@ export function App() {
     }
   }
 
+  const handleCreateWorkspace = async (name) => {
+    setAuthLoading(true);
+    setToast("");
+    try {
+      const restId = await createRemoteRestaurant(name);
+      if (restId) {
+        setToast(`Ресторан "${name}" успешно создан!`);
+        setRemoteWorkspace({ restaurantId: restId, status: "connected", message: "Supabase подключен" });
+        window.location.reload();
+      } else {
+        throw new Error("Не удалось получить ID ресторана");
+      }
+    } catch (err) {
+      console.error(err);
+      setToast("Ошибка создания: " + err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleJoinWorkspace = async (code) => {
+    setAuthLoading(true);
+    setToast("");
+    try {
+      const restId = await joinRemoteRestaurantByInviteCode(code);
+      if (restId) {
+        setToast("Вы успешно присоединились к проекту!");
+        setRemoteWorkspace({ restaurantId: restId, status: "connected", message: "Supabase подключен" });
+        window.location.reload();
+      } else {
+        throw new Error("Не удалось присоединиться");
+      }
+    } catch (err) {
+      console.error(err);
+      setToast("Ошибка: " + err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleOpenDemoWorkspace = async () => {
+    setAuthLoading(true);
+    setToast("");
+    try {
+      const workspace = await bootstrapAndLoadChefOsWorkspace({ currentUserId: accountUserId });
+      if (workspace) {
+        setToast("Демо-кухня готова!");
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+      setToast("Ошибка: " + err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSwitchWorkspace = () => {
+    localStorage.removeItem("chef-os-demo:operational-cache");
+    setRemoteWorkspace({ restaurantId: null, restaurantName: null, inviteCode: null, status: "onboarding", message: "Выберите или создайте кухню" });
+    setSettingsOpen(false);
+    setToast("Выберите или создайте кухню");
+  };
+
+  const handleAssignStaffStation = async (contactId, stationCode, roleLabel) => {
+    try {
+      const stationUuid = stationCode === "warehouse" ? null : (stationGuidesList.find(g => g.id === stationCode)?.remoteId || null);
+      await assignRemoteStaffStation(contactId, stationUuid, roleLabel);
+      
+      setStaffList(current => current.map(item => {
+        if (item.id === contactId) {
+          const stationName = stationCode === "warehouse" ? "Склад" : (stationGuidesList.find(g => g.id === stationCode)?.name || "Склад");
+          return {
+            ...item,
+            stationId: stationCode,
+            station: stationName,
+            role: roleLabel
+          };
+        }
+        return item;
+      }));
+      setToast("Сотрудник назначен!");
+    } catch (err) {
+      console.error(err);
+      setToast("Ошибка назначения: " + err.message);
+    }
+  };
+
   async function sendChatMessage(text) {
-    const localMessage = { id: Date.now(), from: accountName, text, mine: true, time: "сейчас" };
+    const senderLabel = currentCook ? `${currentCook.name} | ${currentCook.station}` : accountName;
+    const localMessage = { id: Date.now(), from: senderLabel, text, mine: true, time: "сейчас" };
     setChatMessages((current) => [...current, localMessage]);
 
     try {
-      const remoteMessage = await createRemoteChannelMessage({ restaurantId: remoteWorkspace.restaurantId, text, senderLabel: accountName, userId: accountUserId });
+      const remoteMessage = await createRemoteChannelMessage({ restaurantId: remoteWorkspace.restaurantId, text, senderLabel, userId: accountUserId });
       if (remoteMessage) {
         setChatMessages((current) => current.map((message) => (message.id === localMessage.id ? remoteMessage : message)));
       }
@@ -770,54 +885,66 @@ export function App() {
         <AppHeader title={screenTitle} activeTab={activeTab} currentCook={currentCook} currentShift={currentShiftState} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
           <AuthStatus session={session} loading={authLoading} isOnline={isOnline} cacheStatus={cacheStatus} remoteWorkspace={remoteWorkspace} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
-          {activeTab === "shift" && (
-            <ShiftScreen
-              tasks={tasks}
-              generalChecklist={generalChecklist}
-              stationChecklists={stationChecklists}
-              currentCook={currentCook}
-              stationGuides={stationGuidesList}
-              currentShift={currentShiftState}
-              onToggleTask={toggleTask}
-              toggleGeneralChecklist={toggleGeneralChecklist}
-              activity={activity}
-              addActivity={addActivity}
-              setStaffOpen={setStaffOpen}
-              setSelectedStop={setSelectedStop}
-              setSelectedStation={setSelectedStation}
-              setToast={setToast}
+          {remoteWorkspace.status === "onboarding" ? (
+            <OnboardingScreen
+              onCreate={handleCreateWorkspace}
+              onJoin={handleJoinWorkspace}
+              onDemo={handleOpenDemoWorkspace}
+              loading={authLoading}
             />
+          ) : (
+            <>
+              {activeTab === "shift" && (
+                <ShiftScreen
+                  tasks={tasks}
+                  generalChecklist={generalChecklist}
+                  stationChecklists={stationChecklists}
+                  currentCook={currentCook}
+                  stationGuides={stationGuidesList}
+                  currentShift={currentShiftState}
+                  onToggleTask={toggleTask}
+                  toggleGeneralChecklist={toggleGeneralChecklist}
+                  activity={activity}
+                  addActivity={addActivity}
+                  setStaffOpen={setStaffOpen}
+                  setSelectedStop={setSelectedStop}
+                  setSelectedStation={setSelectedStation}
+                  setToast={setToast}
+                />
+              )}
+              {activeTab === "recipes" && (
+                <Recipes
+                  filter={recipeFilter}
+                  setFilter={setRecipeFilter}
+                  recipes={filteredRecipes}
+                  query={query}
+                  setQuery={setQuery}
+                  setSelectedRecipe={setSelectedRecipe}
+                />
+              )}
+              {activeTab === "base" && (
+                <BaseScreen
+                  inventoryItems={inventoryItems}
+                  onUpdateIngredientPrice={handleUpdateIngredientPrice}
+                />
+              )}
+              {activeTab === "inventory" && <InventoryScreen inventoryItems={inventoryItems} reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
+              {activeTab === "stations" && (
+                <StationsScreen
+                  stationChecklists={stationChecklists}
+                  currentCook={currentCook}
+                  stationGuides={stationGuidesList}
+                  setSelectedStation={setSelectedStation}
+                />
+              )}
+              {activeTab === "chat" && <Chat messages={chatMessages} onSendMessage={sendChatMessage} />}
+            </>
           )}
-          {activeTab === "recipes" && (
-            <Recipes
-              filter={recipeFilter}
-              setFilter={setRecipeFilter}
-              recipes={filteredRecipes}
-              query={query}
-              setQuery={setQuery}
-              setSelectedRecipe={setSelectedRecipe}
-            />
-          )}
-          {activeTab === "base" && (
-            <BaseScreen
-              inventoryItems={inventoryItems}
-              onUpdateIngredientPrice={handleUpdateIngredientPrice}
-            />
-          )}
-          {activeTab === "inventory" && <InventoryScreen inventoryItems={inventoryItems} reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
-          {activeTab === "stations" && (
-            <StationsScreen
-              stationChecklists={stationChecklists}
-              currentCook={currentCook}
-              stationGuides={stationGuidesList}
-              setSelectedStation={setSelectedStation}
-            />
-          )}
-          {activeTab === "chat" && <Chat messages={chatMessages} onSendMessage={sendChatMessage} />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
         {topMenuOpen && (
           <TopMenuSheet
+            currentCook={currentCook}
             onClose={() => setTopMenuOpen(false)}
             onOpenProfile={() => {
               setTopMenuOpen(false);
@@ -852,9 +979,9 @@ export function App() {
             }}
           />
         )}
-        {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} resetLoading={resetLoading} onResetDemo={resetDemoWorkspace} onClose={() => setSettingsOpen(false)} />}
+        {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} currentCook={currentCook} resetLoading={resetLoading} onResetDemo={resetDemoWorkspace} onSwitchWorkspace={handleSwitchWorkspace} onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
-        {staffOpen && <StaffSheet staff={staffList} onClose={() => setStaffOpen(false)} setToast={setToast} />}
+        {staffOpen && <StaffSheet staff={staffList} currentUserRole={currentCook?.role} onAssignStation={handleAssignStaffStation} onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && (
           <RecipeSheet
             recipe={recipesList.find(r => r.id === selectedRecipe.id) || selectedRecipe}
@@ -1273,28 +1400,118 @@ function Chat({ messages: chatMessages, onSendMessage }) {
   );
 }
 
-function StaffSheet({ staff: staffList, onClose, setToast }) {
+function StaffSheet({ staff: staffList, currentUserRole, onClose, onAssignStation, setToast }) {
+  const [editingPerson, setEditingPerson] = React.useState(null);
+  const [selectedStation, setSelectedStation] = React.useState("");
+  const [selectedRole, setSelectedRole] = React.useState("");
+
+  const isManager = currentUserRole === "Шеф/Владелец" || currentUserRole === "Шеф-повар" || currentUserRole === "Су-шеф" || currentUserRole === "Су-шеф";
+
+  const handleStartEdit = (person) => {
+    setEditingPerson(person);
+    setSelectedStation(person.stationId || "cold");
+    setSelectedRole(person.role || "Повар");
+  };
+
+  const handleSave = async () => {
+    try {
+      await onAssignStation(editingPerson.id, selectedStation, selectedRole);
+      setEditingPerson(null);
+      setToast("Настройки сотрудника обновлены!");
+    } catch (err) {
+      console.error(err);
+      setToast("Ошибка обновления: " + err.message);
+    }
+  };
+
+  const stationOptions = [
+    { id: "cold", label: "Холодный цех" },
+    { id: "hot", label: "Горячий цех" },
+    { id: "prep", label: "Заготовочный" },
+    { id: "pass", label: "Pass / выдача" },
+    { id: "sushi", label: "Суши" },
+    { id: "warehouse", label: "Склад" }
+  ];
+
+  const roleOptions = ["Повар", "Су-шеф", "Шеф-повар", "Закупщик", "Шеф/Владелец"];
+
   return (
     <Sheet onClose={onClose} title="Люди на смене">
       <div className="space-y-3">
-        {staffList.map((person) => (
-          <article key={person.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-slate-50 p-3">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">{person.avatar}</div>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-black text-slate-950">{person.name}</p>
-              <p className="text-sm font-semibold text-slate-500">{person.role} · {person.station} · {person.time}</p>
+        {editingPerson ? (
+          <div className="rounded-3xl bg-slate-50 p-4 space-y-4">
+            <h4 className="font-black text-slate-900">Настройки доступа: {editingPerson.name}</h4>
+            
+            <div>
+              <label className="text-xs font-bold text-slate-500">Рабочий цех / Станция</label>
+              <select
+                value={selectedStation}
+                onChange={(e) => setSelectedStation(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              >
+                {stationOptions.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
             </div>
-            <a href={`tel:${person.phone}`} onClick={() => setToast(`Звонок: ${person.name}`)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-green-500 text-white" aria-label={`Позвонить ${person.name}`}>
-              <Phone size={22} />
-            </a>
-          </article>
-        ))}
+
+            <div>
+              <label className="text-xs font-bold text-slate-500">Должность / Роль</label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              >
+                {roleOptions.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingPerson(null)}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2 text-sm font-bold text-slate-600"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex-1 rounded-xl bg-amber-500 py-2 text-sm font-bold text-white hover:bg-amber-600"
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        ) : (
+          staffList.map((person) => (
+            <article key={person.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-slate-50 p-3">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">{person.avatar}</div>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-black text-slate-950">{person.name}</p>
+                <p className="text-sm font-semibold text-slate-500">{person.role} · {person.station} · {person.time}</p>
+              </div>
+              {isManager && (
+                <button
+                  onClick={() => handleStartEdit(person)}
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-200 text-slate-700 hover:bg-slate-300 mr-1"
+                  aria-label="Редактировать цех"
+                >
+                  <Settings size={20} />
+                </button>
+              )}
+              <a href={`tel:${person.phone}`} onClick={() => setToast(`Звонок: ${person.name}`)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-green-500 text-white" aria-label={`Позвонить ${person.name}`}>
+                <Phone size={22} />
+              </a>
+            </article>
+          ))
+        )}
       </div>
     </Sheet>
   );
 }
 
-function TopMenuSheet({ onClose, onOpenProfile, onOpenNotifications, onOpenSchedule, onOpenStaff, onOpenSettings }) {
+function TopMenuSheet({ currentCook, onClose, onOpenProfile, onOpenNotifications, onOpenSchedule, onOpenStaff, onOpenSettings }) {
   const menuItems = [
     { label: "Профиль", description: `${currentCook.name} · ${currentCook.station}`, icon: Users, onClick: onOpenProfile },
     { label: "График", description: "Смены, повара, нагрузка", icon: Clock3, onClick: onOpenSchedule },
@@ -1356,24 +1573,55 @@ function ScheduleSheet({ onClose, onOpenStaff }) {
   );
 }
 
-function SettingsSheet({ remoteWorkspace, resetLoading, onResetDemo, onClose }) {
+function SettingsSheet({ remoteWorkspace, currentCook, resetLoading, onResetDemo, onSwitchWorkspace, onClose }) {
   const canResetDemo = remoteWorkspace.status === "connected" && !resetLoading;
 
+  const handleCopyInvite = () => {
+    if (remoteWorkspace.inviteCode) {
+      navigator.clipboard.writeText(remoteWorkspace.inviteCode);
+      alert("Код приглашения скопирован: " + remoteWorkspace.inviteCode);
+    }
+  };
+
+  const rows = [
+    ["Ресторан", remoteWorkspace.restaurantName || "Chef OS Demo"],
+    ["Роль", currentCook?.role || "Повар"],
+    ["Язык", "Русский"],
+    ["База", getDatabaseLabel(remoteWorkspace)],
+  ];
+
+  if (remoteWorkspace.status === "connected" && remoteWorkspace.inviteCode) {
+    rows.push(["Код приглашения", remoteWorkspace.inviteCode]);
+  }
+
   return (
-    <Sheet onClose={onClose} title="Настройки" eyebrow="Пока демо">
+    <Sheet onClose={onClose} title="Настройки" eyebrow={remoteWorkspace.restaurantName || "Chef OS"}>
       <div className="space-y-3">
-        {[
-          ["Ресторан", "Chef OS Demo"],
-          ["Роль", currentCook.role],
-          ["Язык", "Русский"],
-          ["База", getDatabaseLabel(remoteWorkspace)],
-          ["Мобильное приложение", "PWA/APK в roadmap"],
-        ].map(([label, value]) => (
+        {rows.map(([label, value]) => (
           <div key={label} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4">
             <span className="text-sm font-black text-slate-500">{label}</span>
-            <span className="text-right text-sm font-black text-slate-950">{value}</span>
+            {label === "Код приглашения" ? (
+              <button
+                onClick={handleCopyInvite}
+                className="text-right text-sm font-black text-amber-600 hover:text-amber-700"
+              >
+                {value} (копировать)
+              </button>
+            ) : (
+              <span className="text-right text-sm font-black text-slate-950">{value}</span>
+            )}
           </div>
         ))}
+
+        {remoteWorkspace.status === "connected" && (
+          <button
+            onClick={onSwitchWorkspace}
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50"
+          >
+            Сменить кухню / Выйти
+          </button>
+        )}
+
         <button
           onClick={onResetDemo}
           disabled={!canResetDemo}
@@ -1384,6 +1632,137 @@ function SettingsSheet({ remoteWorkspace, resetLoading, onResetDemo, onClose }) 
         </button>
       </div>
     </Sheet>
+  );
+}
+
+function OnboardingScreen({ onCreate, onJoin, onDemo, loading }) {
+  const [restName, setRestName] = React.useState("");
+  const [inviteCode, setInviteCode] = React.useState("");
+  const [mode, setMode] = React.useState(null);
+
+  return (
+    <div className="mx-auto my-6 max-w-md overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-soft backdrop-blur-md">
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+          <ChefHat size={32} className="animate-pulse" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900">Добро пожаловать в Chef OS</h2>
+        <p className="mt-2 text-sm font-semibold text-slate-500">Выберите или создайте рабочее пространство для вашей кухни</p>
+      </div>
+
+      <div className="mt-8 space-y-4">
+        {mode === null && (
+          <>
+            <button
+              onClick={() => setMode("create")}
+              className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-amber-500 hover:bg-amber-50/10 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+                  <Plus size={20} />
+                </div>
+                <div>
+                  <div className="font-black text-slate-800">Создать новую кухню</div>
+                  <div className="text-xs font-semibold text-slate-400">Для шеф-поваров и владельцев</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setMode("join")}
+              className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-emerald-500 hover:bg-emerald-50/10 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                  <Users size={20} />
+                </div>
+                <div>
+                  <div className="font-black text-slate-800">Присоединиться по коду</div>
+                  <div className="text-xs font-semibold text-slate-400">Для су-шефов, поваров и закупщиков</div>
+                </div>
+              </div>
+            </button>
+
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-4 text-xs font-bold text-slate-400">или</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <button
+              onClick={onDemo}
+              disabled={loading}
+              className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 font-black text-white shadow-md transition-all hover:bg-slate-800 disabled:opacity-50"
+            >
+              <Sparkles size={18} />
+              Открыть демо-кухню
+            </button>
+          </>
+        )}
+
+        {mode === "create" && (
+          <div className="space-y-4">
+            <h3 className="font-black text-slate-800">Создание нового проекта</h3>
+            <div>
+              <label className="text-xs font-bold text-slate-500">Название кухни / ресторана</label>
+              <input
+                type="text"
+                placeholder="Например, Ресторан Облака"
+                value={restName}
+                onChange={(e) => setRestName(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setMode(null)}
+                className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Назад
+              </button>
+              <button
+                onClick={() => onCreate(restName)}
+                disabled={loading || !restName.trim()}
+                className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                {loading ? "Создание..." : "Создать"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {mode === "join" && (
+          <div className="space-y-4">
+            <h3 className="font-black text-slate-800">Присоединение к проекту</h3>
+            <div>
+              <label className="text-xs font-bold text-slate-500">Код приглашения (Invite Code)</label>
+              <input
+                type="text"
+                placeholder="CHEF-XXXX-XXXX"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setMode(null)}
+                className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Назад
+              </button>
+              <button
+                onClick={() => onJoin(inviteCode)}
+                disabled={loading || !inviteCode.trim()}
+                className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50"
+              >
+                {loading ? "Вход..." : "Присоединиться"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

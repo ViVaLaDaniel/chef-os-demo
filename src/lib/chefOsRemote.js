@@ -63,7 +63,8 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     staffResult,
     recipesResult,
     processesResult,
-    templatesResult
+    templatesResult,
+    restaurantDetailsResult
   ] = await Promise.all([
     supabase.from("stations").select("id,name,description,owner_label,sort_order").eq("restaurant_id", restaurantId).order("sort_order"),
     supabase
@@ -123,6 +124,10 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
         app_user_id,
         station_id,
         stations(name),
+        profiles:app_user_id (
+          full_name,
+          avatar_url
+        ),
         shift_assignments (
           starts_at,
           ends_at,
@@ -179,12 +184,17 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
           sort_order
         )
       `)
-      .eq("restaurant_id", restaurantId)
+      .eq("restaurant_id", restaurantId),
+    supabase
+      .from("restaurants")
+      .select("name,invite_code")
+      .eq("id", restaurantId)
+      .single()
   ]);
 
   const results = [
     stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult,
-    shiftsResult, staffResult, recipesResult, processesResult, templatesResult
+    shiftsResult, staffResult, recipesResult, processesResult, templatesResult, restaurantDetailsResult
   ];
   const failedResult = results.find((result) => result.error);
   if (failedResult) {
@@ -256,6 +266,8 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
 
   return {
     restaurantId,
+    restaurantName: restaurantDetailsResult.data?.name ?? "Chef OS Kitchen",
+    inviteCode: restaurantDetailsResult.data?.invite_code ?? "",
     tasks: (tasksResult.data ?? []).map((task) => mapTask(task, stationsById)),
     inventoryItems: (inventoryResult.data ?? []).map(mapInventoryItem),
     inventoryReports: (reportsResult.data ?? []).map(mapInventoryReport),
@@ -498,16 +510,19 @@ function mapStaffMember(contact, activeShiftId) {
 
   const instruction = instructionsByStation[stationId] ?? "Соблюдать ТТК и санитарные нормы.";
 
+  const profileName = contact.profiles?.full_name || contact.full_name;
+  const profileAvatar = contact.profiles?.avatar_url || (profileName ? profileName.charAt(0).toUpperCase() : "?");
+
   return {
     id: contact.id,
-    name: contact.full_name,
+    name: profileName,
     role: contact.role_label,
     station: stationName,
     stationId,
     time: timeStr,
     status: statusStr,
     phone: contact.phone ?? "",
-    avatar: contact.full_name ? contact.full_name.charAt(0).toUpperCase() : "?",
+    avatar: profileAvatar,
     instruction,
     appUserId: contact.app_user_id
   };
@@ -665,3 +680,41 @@ export async function updateRemoteRecipeIngredients(recipeId, ingredientsList) {
     
   if (insertError) throw insertError;
 }
+
+export async function createRemoteRestaurant(restaurantName) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("create_new_restaurant", { restaurant_name: restaurantName });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0]?.restaurant_id : data?.restaurant_id;
+}
+
+export async function joinRemoteRestaurantByInviteCode(inviteCode) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("join_restaurant_by_invite_code", { code: inviteCode });
+  if (error) throw error;
+  return Array.isArray(data) ? data[0]?.restaurant_id : data?.restaurant_id;
+}
+
+export async function getRemoteUserMemberships(userId) {
+  if (!supabase || !userId) return [];
+  const { data, error } = await supabase
+    .from("restaurant_members")
+    .select("restaurant_id, role, status")
+    .eq("user_id", userId)
+    .eq("status", "active");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function assignRemoteStaffStation(contactId, stationId, roleLabel) {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from("staff_contacts")
+    .update({
+      station_id: stationId,
+      role_label: roleLabel
+    })
+    .eq("id", contactId);
+  if (error) throw error;
+}
+
