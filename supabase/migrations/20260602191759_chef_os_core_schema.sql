@@ -342,7 +342,7 @@ create policy "recipe_steps_read_members" on public.recipe_steps for select to a
 create policy "recipe_steps_write_leadership" on public.recipe_steps for all to authenticated using (exists (select 1 from public.recipes r where r.id = recipe_id and app_private.has_restaurant_role(r.restaurant_id, array['owner','chef','sous_chef','admin']::public.app_role[]))) with check (exists (select 1 from public.recipes r where r.id = recipe_id and app_private.has_restaurant_role(r.restaurant_id, array['owner','chef','sous_chef','admin']::public.app_role[])));
 
 create policy "activity_log_read_members" on public.activity_log for select to authenticated using (app_private.is_restaurant_member(restaurant_id));
-create policy "activity_log_insert_members" on public.activity_log for insert to authenticated with check (app_private.is_restaurant_member(restaurant_id));
+create policy "activity_log_insert_members" on public.activity_log for insert to authenticated with check (app_private.is_restaurant_member(restaurant_id) and (actor_user_id = auth.uid() or actor_user_id is null));
 
 create policy "channel_messages_read_members" on public.channel_messages for select to authenticated using (app_private.is_restaurant_member(restaurant_id));
 create policy "channel_messages_insert_members" on public.channel_messages for insert to authenticated with check (app_private.is_restaurant_member(restaurant_id));
