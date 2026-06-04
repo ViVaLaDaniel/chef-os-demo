@@ -8,13 +8,13 @@
 ## Frontend Integration
 
 - Persist general and station checklist completion to Supabase. Completed on 2026-06-04.
-- Replace remaining local seed data with Supabase reads.
+- Replace remaining local seed data with Supabase reads. Completed on 2026-06-04.
 - Add loading, empty, error, and backend-sync states for every screen.
 - Verify inventory reports persist to `inventory_reports` in production. Completed on 2026-06-03 for `Соевый соус`.
 - Verify shift task completion persists to `shift_tasks` in production. Completed on 2026-06-03 for `Принять рыбу и температуру`.
 - Verify chat messages persist to `channel_messages` in production. Completed on 2026-06-03 with `Тест sync: склад подтвержден`.
-- Load station process guides from `stations` and `station_processes`.
-- Load operational cook profile and role from Supabase membership instead of the fixed demo cook.
+- Load station process guides from `stations` and `station_processes`. Completed on 2026-06-04.
+- Load operational cook profile and role from Supabase membership instead of the fixed demo cook. Completed on 2026-06-04.
 
 ## Roles
 
