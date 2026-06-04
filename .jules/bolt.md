@@ -1,0 +1,3 @@
+## 2026-06-04 - Memoize heavy operations in root components
+**Learning:** `App` in this React codebase maintains an extensive amount of operational state (tabs, tasks, checklists, chat messages, notifications). Any synchronous array filtering (like `recipes.filter`) inside `App` runs on *every* state update, even minor ones like drafting a chat message or toggling a checklist item, causing unnecessary main thread overhead.
+**Action:** Always wrap heavy list filtering/derivations in `React.useMemo` if they are defined at a high level (like `App.jsx`) where state changes frequently and is unrelated to the filtered list.
