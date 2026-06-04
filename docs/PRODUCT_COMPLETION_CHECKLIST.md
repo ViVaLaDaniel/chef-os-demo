@@ -35,8 +35,8 @@ This checklist tracks what Chef OS still needs so future sessions do not forget 
 - [x] Station/process checklist.
 - [x] Checklist progress by station.
 - [x] Activity log events for checklist actions.
-- [ ] Persist checklist results in Supabase.
-- [ ] Add checklist templates.
+- [x] Persist checklist results in Supabase.
+- [x] Add checklist templates.
 - [ ] Add recurring checklist schedules.
 - [ ] Add required photo proof for selected items.
 - [ ] Add manager sign-off.

@@ -20,6 +20,22 @@ const REPORT_STATUS_LABELS = {
   rejected: "Отклонена",
 };
 
+const STATION_NAME_TO_ID = {
+  "Холодный цех": "cold",
+  "Горячий цех": "hot",
+  "Заготовочный": "prep",
+  "Pass / выдача": "pass",
+  "Суши": "sushi",
+};
+
+function getGeneralChecklistItemStation(title) {
+  const t = title.toLowerCase();
+  if (t.includes("бриф")) return "Команда";
+  if (t.includes("стоп-лист") || t.includes("vip")) return "Pass";
+  if (t.includes("остатки")) return "Склад";
+  return "Все цеха";
+}
+
 export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
   if (!supabase) {
     return null;
@@ -35,7 +51,7 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     throw new Error("Chef OS workspace bootstrap did not return restaurant_id");
   }
 
-  const [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult] = await Promise.all([
+  const [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult] = await Promise.all([
     supabase.from("stations").select("id,name,description,owner_label,sort_order").eq("restaurant_id", restaurantId).order("sort_order"),
     supabase
       .from("shift_tasks")
@@ -54,15 +70,80 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
       .order("created_at", { ascending: false }),
     supabase.from("activity_log").select("id,actor_label,action,metadata,created_at").eq("restaurant_id", restaurantId).order("created_at", { ascending: false }).limit(20),
     supabase.from("channel_messages").select("id,sender_user_id,sender_label,body,created_at").eq("restaurant_id", restaurantId).order("created_at", { ascending: true }).limit(50),
+    supabase
+      .from("shift_checklist_runs")
+      .select(`
+        id,
+        template_id,
+        shifts!inner(restaurant_id),
+        checklist_templates (
+          id,
+          title,
+          phase,
+          station_id
+        ),
+        shift_checklist_item_results (
+          id,
+          item_id,
+          is_completed,
+          checklist_items (
+            id,
+            title,
+            sort_order
+          )
+        )
+      `)
+      .eq("shifts.restaurant_id", restaurantId)
   ]);
 
-  const results = [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult];
+  const results = [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult];
   const failedResult = results.find((result) => result.error);
   if (failedResult) {
     throw failedResult.error;
   }
 
   const stationsById = new Map((stationsResult.data ?? []).map((station) => [station.id, station]));
+
+  // Map checklists
+  let generalChecklist = [];
+  const stationChecklists = {
+    cold: { setup: [], service: [], close: [] },
+    hot: { setup: [], service: [], close: [] },
+    prep: { setup: [], service: [], close: [] },
+    pass: { setup: [], service: [], close: [] },
+    sushi: { setup: [], service: [], close: [] }
+  };
+
+  for (const run of (checklistRunsResult.data ?? [])) {
+    const tpl = run.checklist_templates;
+    if (!tpl) continue;
+
+    const sortedResults = (run.shift_checklist_item_results ?? []).slice().sort((a, b) => {
+      return (a.checklist_items?.sort_order ?? 0) - (b.checklist_items?.sort_order ?? 0);
+    });
+
+    if (tpl.phase === "general") {
+      generalChecklist = sortedResults.map((r) => ({
+        id: r.id,
+        title: r.checklist_items?.title ?? "Чек",
+        station: getGeneralChecklistItemStation(r.checklist_items?.title ?? ""),
+        done: r.is_completed
+      }));
+    } else if (tpl.station_id) {
+      const station = stationsById.get(tpl.station_id);
+      if (station) {
+        const stationKey = STATION_NAME_TO_ID[station.name];
+        const phaseKey = tpl.phase;
+        if (stationKey && phaseKey && stationChecklists[stationKey]?.[phaseKey]) {
+          stationChecklists[stationKey][phaseKey] = sortedResults.map((r) => ({
+            id: r.id,
+            title: r.checklist_items?.title ?? "Чек",
+            done: r.is_completed
+          }));
+        }
+      }
+    }
+  }
 
   return {
     restaurantId,
@@ -71,7 +152,28 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     inventoryReports: (reportsResult.data ?? []).map(mapInventoryReport),
     activity: (activityResult.data ?? []).map(mapActivity),
     chatMessages: (messagesResult.data ?? []).map((message) => mapMessage(message, currentUserId)),
+    generalChecklist: generalChecklist.length > 0 ? generalChecklist : null,
+    stationChecklists: Object.values(stationChecklists).some(p => Object.values(p).some(arr => arr.length > 0)) ? stationChecklists : null
   };
+}
+
+export async function updateRemoteChecklistResult(resultId, done, { userId } = {}) {
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("shift_checklist_item_results")
+    .update({
+      is_completed: done,
+      completed_by: done ? userId ?? null : null,
+      completed_at: done ? new Date().toISOString() : null,
+    })
+    .eq("id", resultId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function updateRemoteShiftTask(task, done, { userId } = {}) {

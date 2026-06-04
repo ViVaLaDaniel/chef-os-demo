@@ -38,6 +38,7 @@ import {
   createRemoteInventoryReport,
   resetRemoteDemoWorkspace,
   updateRemoteShiftTask,
+  updateRemoteChecklistResult,
 } from "./lib/chefOsRemote";
 import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
 
@@ -339,6 +340,12 @@ export function App() {
         setInventoryReports(workspace.inventoryReports);
         setActivity(workspace.activity.length > 0 ? workspace.activity : initialActivity);
         setChatMessages(workspace.chatMessages.length > 0 ? workspace.chatMessages : messages);
+        if (workspace.generalChecklist) {
+          setGeneralChecklist(workspace.generalChecklist);
+        }
+        if (workspace.stationChecklists) {
+          setStationChecklists(workspace.stationChecklists);
+        }
       } catch (error) {
         if (isCancelled) {
           return;
@@ -472,6 +479,16 @@ export function App() {
       setInventoryReports(workspace.inventoryReports);
       setActivity(workspace.activity.length > 0 ? workspace.activity : initialActivity);
       setChatMessages(workspace.chatMessages.length > 0 ? workspace.chatMessages : messages);
+      if (workspace.generalChecklist) {
+        setGeneralChecklist(workspace.generalChecklist);
+      } else {
+        setGeneralChecklist(initialGeneralChecklist);
+      }
+      if (workspace.stationChecklists) {
+        setStationChecklists(workspace.stationChecklists);
+      } else {
+        setStationChecklists(initialStationChecklists);
+      }
       setToast("Demo workspace очищен");
     } catch (error) {
       setToast(`Reset не выполнен: ${error.message}`);
@@ -504,23 +521,43 @@ export function App() {
     setQuickPanelOpen(false);
   }
 
-  function toggleGeneralChecklist(item) {
-    setGeneralChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: !entry.done } : entry)));
+  async function toggleGeneralChecklist(item) {
+    const nextDone = !item.done;
+    setGeneralChecklist((current) => current.map((entry) => (entry.id === item.id ? { ...entry, done: nextDone } : entry)));
     addActivity(`${item.done ? "Вернул" : "Закрыл"} общий чек: ${item.title}`, item.station, item.done ? "amber" : "green", accountName);
+
+    try {
+      if (remoteWorkspace.status === "connected" && typeof item.id === "string" && item.id.length > 10) {
+        await updateRemoteChecklistResult(item.id, nextDone, { userId: accountUserId });
+      }
+    } catch (error) {
+      setToast(`Чек-лист сохранен локально, база недоступна: ${error.message}`);
+    }
   }
 
-  function toggleStationChecklist(stationId, phase, itemId) {
+  async function toggleStationChecklist(stationId, phase, itemId) {
     const station = stationGuides.find((entry) => entry.id === stationId);
     const item = stationChecklists[stationId]?.[phase]?.find((entry) => entry.id === itemId);
+    if (!item) return;
+
+    const nextDone = !item.done;
     setStationChecklists((current) => ({
       ...current,
       [stationId]: {
         ...current[stationId],
-        [phase]: current[stationId][phase].map((entry) => (entry.id === itemId ? { ...entry, done: !entry.done } : entry)),
+        [phase]: current[stationId][phase].map((entry) => (entry.id === itemId ? { ...entry, done: nextDone } : entry)),
       },
     }));
-    if (item && station) {
+    if (station) {
       addActivity(`${item.done ? "Вернул" : "Закрыл"} чек: ${item.title}`, station.name, item.done ? "amber" : "green", accountName);
+    }
+
+    try {
+      if (remoteWorkspace.status === "connected" && typeof itemId === "string" && itemId.length > 10) {
+        await updateRemoteChecklistResult(itemId, nextDone, { userId: accountUserId });
+      }
+    } catch (error) {
+      setToast(`Чек-лист сохранен локально, база недоступна: ${error.message}`);
     }
   }
 

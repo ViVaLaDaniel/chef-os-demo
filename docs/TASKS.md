@@ -7,7 +7,7 @@
 
 ## Frontend Integration
 
-- Persist general and station checklist completion to Supabase.
+- Persist general and station checklist completion to Supabase. Completed on 2026-06-04.
 - Replace remaining local seed data with Supabase reads.
 - Add loading, empty, error, and backend-sync states for every screen.
 - Verify inventory reports persist to `inventory_reports` in production. Completed on 2026-06-03 for `Соевый соус`.
