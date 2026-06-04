@@ -29,6 +29,8 @@ import {
   Wifi,
   WifiOff,
   X,
+  Database,
+  Scale,
 } from "lucide-react";
 import "./index.css";
 import {
@@ -39,12 +41,16 @@ import {
   resetRemoteDemoWorkspace,
   updateRemoteShiftTask,
   updateRemoteChecklistResult,
+  updateRemoteIngredientPrice,
+  updateRemoteRecipeCosting,
+  updateRemoteRecipeIngredients,
 } from "./lib/chefOsRemote";
 import { isSupabaseConfigured, signInWithGoogle, signOut, supabase } from "./lib/supabase";
 
 const tabs = [
   { id: "shift", label: "Смена", icon: Home },
   { id: "recipes", label: "ТТК", icon: Utensils },
+  { id: "base", label: "База", icon: Database },
   { id: "inventory", label: "Склад", icon: Package },
   { id: "stations", label: "Цеха", icon: ListChecks },
   { id: "chat", label: "Чат", icon: MessageCircle },
@@ -176,10 +182,10 @@ const stopList = [
 ];
 
 const initialInventoryItems = [
-  { id: 1, name: "Тунец", station: "Холодный цех", stock: "1 лоток", par: "4 лотка", status: "critical", supplier: "Nord Fish" },
-  { id: 2, name: "Сливочное масло", station: "Горячий цех", stock: "2 пачки", par: "8 пачек", status: "low", supplier: "Prime Market" },
-  { id: 3, name: "Соевый соус", station: "Суши", stock: "1 банка", par: "6 банок", status: "low", supplier: "Asian Pro" },
-  { id: 4, name: "Микс зелени", station: "Холодный цех", stock: "норма", par: "3 бокса", status: "ok", supplier: "Bio Herbs" },
+  { id: 1, name: "Тунец", station: "Холодный цех", stock: "1 лоток", par: "4 лотка", status: "critical", supplier: "Nord Fish", costPerUnit: 22.00, lossPercent: 0.10, unitLabel: "лоток" },
+  { id: 2, name: "Сливочное масло", station: "Горячий цех", stock: "2 пачки", par: "8 пачек", status: "low", supplier: "Prime Market", costPerUnit: 4.50, lossPercent: 0.02, unitLabel: "пачка" },
+  { id: 3, name: "Соевый соус", station: "Суши", stock: "1 банка", par: "6 банок", status: "low", supplier: "Asian Pro", costPerUnit: 6.20, lossPercent: 0.00, unitLabel: "банка" },
+  { id: 4, name: "Микс зелени", station: "Холодный цех", stock: "норма", par: "3 бокса", status: "ok", supplier: "Bio Herbs", costPerUnit: 2.40, lossPercent: 0.15, unitLabel: "бокс" },
 ];
 
 const recipes = [
@@ -190,9 +196,17 @@ const recipes = [
     time: "12 мин",
     yield: "180 г",
     cost: "4.80 EUR",
+    costNum: 4.80,
+    salesPrice: 16.50,
+    targetMarginPercent: 70,
     allergens: "рыба, кунжут",
     image: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=240&q=80",
     steps: ["Охладить миску и нож", "Нарезать кубик 6 мм", "Смешать с соусом перед отдачей", "Проверить фото эталона"],
+    ingredients: [
+      { itemId: 1, name: "Тунец", gross: 0.180, net: 0.160, costPerUnit: 22.00, lossPercent: 0.10, unitLabel: "лоток", calculatedCost: 3.96 },
+      { itemId: 4, name: "Микс зелени", gross: 0.020, net: 0.015, costPerUnit: 2.40, lossPercent: 0.15, unitLabel: "бокс", calculatedCost: 0.048 },
+      { itemId: 3, name: "Соевый соус", gross: 0.010, net: 0.010, costPerUnit: 6.20, lossPercent: 0.00, unitLabel: "банка", calculatedCost: 0.062 },
+    ]
   },
   {
     id: 2,
@@ -201,9 +215,15 @@ const recipes = [
     time: "28 мин",
     yield: "320 г",
     cost: "2.10 EUR",
+    costNum: 2.10,
+    salesPrice: 8.50,
+    targetMarginPercent: 70,
     allergens: "сливки",
     image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=240&q=80",
     steps: ["Прогреть основу", "Пробить до гладкости", "Проверить соль", "Подать с семечками"],
+    ingredients: [
+      { itemId: 2, name: "Сливочное масло", gross: 0.050, net: 0.050, costPerUnit: 4.50, lossPercent: 0.02, unitLabel: "пачка", calculatedCost: 0.225 }
+    ]
   },
   {
     id: 3,
@@ -212,9 +232,15 @@ const recipes = [
     time: "34 мин",
     yield: "260 г",
     cost: "7.40 EUR",
+    costNum: 7.40,
+    salesPrice: 24.50,
+    targetMarginPercent: 70,
     allergens: "нет",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=240&q=80",
     steps: ["Надсечь кожу", "Старт на холодной сковороде", "Довести до 56 C", "Отдых 6 минут"],
+    ingredients: [
+      { itemId: 2, name: "Сливочное масло", gross: 0.030, net: 0.030, costPerUnit: 4.50, lossPercent: 0.02, unitLabel: "пачка", calculatedCost: 0.135 }
+    ]
   },
 ];
 
@@ -545,6 +571,121 @@ export function App() {
     }
   }
 
+  async function handleUpdateIngredientPrice(itemId, newPrice, newLoss) {
+    setInventoryItems(current => current.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          costPerUnit: newPrice,
+          lossPercent: newLoss
+        };
+      }
+      return item;
+    }));
+
+    setRecipesList(current => current.map(recipe => {
+      let hasChanged = false;
+      const updatedIngredients = (recipe.ingredients || []).map(ing => {
+        if (ing.itemId === itemId) {
+          hasChanged = true;
+          const calculatedCost = ing.gross * newPrice;
+          return {
+            ...ing,
+            costPerUnit: newPrice,
+            lossPercent: newLoss,
+            calculatedCost
+          };
+        }
+        return ing;
+      });
+
+      if (hasChanged) {
+        const dynamicFoodCost = updatedIngredients.reduce((sum, ing) => sum + ing.calculatedCost, 0);
+        return {
+          ...recipe,
+          ingredients: updatedIngredients,
+          cost: `${dynamicFoodCost.toFixed(2)} EUR`,
+          costNum: dynamicFoodCost
+        };
+      }
+      return recipe;
+    }));
+
+    try {
+      if (remoteWorkspace.status === "connected") {
+        await updateRemoteIngredientPrice(itemId, newPrice, newLoss);
+        setToast("Цена ингредиента сохранена на сервере");
+      } else {
+        setToast("Сохранено локально (нет связи)");
+      }
+    } catch (err) {
+      setToast(`Ошибка сохранения на сервере: ${err.message}`);
+    }
+  }
+
+  async function handleUpdateRecipeCosting(recipeId, salesPrice, targetMargin) {
+    try {
+      if (remoteWorkspace.status === "connected") {
+        await updateRemoteRecipeCosting(recipeId, salesPrice, targetMargin);
+      }
+      setRecipesList(current => current.map(recipe => {
+        if (recipe.id === recipeId) {
+          return {
+            ...recipe,
+            salesPrice: Number(salesPrice) || 0,
+            targetMarginPercent: Number(targetMargin) || 70
+          };
+        }
+        return recipe;
+      }));
+      setToast("Настройки калькуляции сохранены");
+    } catch (error) {
+      setToast(`Ошибка сохранения калькуляции: ${error.message}`);
+    }
+  }
+
+  async function handleUpdateRecipeIngredients(recipeId, ingredientsList) {
+    try {
+      if (remoteWorkspace.status === "connected") {
+        await updateRemoteRecipeIngredients(recipeId, ingredientsList);
+      }
+      
+      setRecipesList(current => current.map(recipe => {
+        if (recipe.id === recipeId) {
+          const updatedIngredients = ingredientsList.map(ing => {
+            const matchingInventoryItem = inventoryItems.find(item => item.id === ing.itemId);
+            const costPerUnit = matchingInventoryItem?.costPerUnit ?? 0;
+            const lossPercent = matchingInventoryItem?.lossPercent ?? 0;
+            const calculatedCost = ing.gross * costPerUnit;
+            return {
+              itemId: ing.itemId,
+              name: ing.name || matchingInventoryItem?.name || "Продукт",
+              gross: Number(ing.gross) || 0,
+              net: Number(ing.net) || 0,
+              costPerUnit,
+              lossPercent,
+              unitLabel: ing.unitLabel || matchingInventoryItem?.unitLabel || "кг",
+              calculatedCost
+            };
+          });
+          
+          const dynamicFoodCost = updatedIngredients.reduce((sum, ing) => sum + ing.calculatedCost, 0);
+          return {
+            ...recipe,
+            ingredients: updatedIngredients,
+            cost: `${dynamicFoodCost.toFixed(2)} EUR`,
+            costNum: dynamicFoodCost
+          };
+        }
+        return recipe;
+      }));
+      
+      setToast("Состав ТТК успешно сохранен");
+    } catch (error) {
+      setToast(`Ошибка сохранения состава ТТК: ${error.message}`);
+    }
+  }
+
   function handleQuickAction(action) {
     addActivity(action.event, action.meta, action.tone, accountName);
     if (action.id === "station-task") {
@@ -657,6 +798,12 @@ export function App() {
               setSelectedRecipe={setSelectedRecipe}
             />
           )}
+          {activeTab === "base" && (
+            <BaseScreen
+              inventoryItems={inventoryItems}
+              onUpdateIngredientPrice={handleUpdateIngredientPrice}
+            />
+          )}
           {activeTab === "inventory" && <InventoryScreen inventoryItems={inventoryItems} reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
           {activeTab === "stations" && (
             <StationsScreen
@@ -708,7 +855,16 @@ export function App() {
         {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} resetLoading={resetLoading} onResetDemo={resetDemoWorkspace} onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
         {staffOpen && <StaffSheet staff={staffList} onClose={() => setStaffOpen(false)} setToast={setToast} />}
-        {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+        {selectedRecipe && (
+          <RecipeSheet
+            recipe={recipesList.find(r => r.id === selectedRecipe.id) || selectedRecipe}
+            inventoryItems={inventoryItems}
+            onClose={() => setSelectedRecipe(null)}
+            onUpdateRecipeCosting={handleUpdateRecipeCosting}
+            onUpdateRecipeIngredients={handleUpdateRecipeIngredients}
+            setToast={setToast}
+          />
+        )}
         {selectedStation && <StationSheet station={selectedStation} checklist={stationChecklists[selectedStation.id]} onToggleChecklist={toggleStationChecklist} onClose={() => setSelectedStation(null)} />}
         {quickPanelOpen && <QuickPanel activeTab={activeTab} currentCook={currentCook} onClose={() => setQuickPanelOpen(false)} onAction={handleQuickAction} />}
         <Fab activeTab={activeTab} onClick={() => setQuickPanelOpen(true)} />
@@ -1301,27 +1457,474 @@ function StopSheet({ item, onClose }) {
   );
 }
 
-function RecipeSheet({ recipe, onClose }) {
+function RecipeSheet({ recipe, inventoryItems, onClose, onUpdateRecipeCosting, onUpdateRecipeIngredients, setToast }) {
+  const [recipeTab, setRecipeTab] = React.useState("steps");
+  
+  // Costing tab states
+  const [salesPriceInput, setSalesPriceInput] = React.useState(recipe.salesPrice || 0);
+  const [targetMargin, setTargetMargin] = React.useState(recipe.targetMarginPercent || 70);
+  const [costingLoading, setCostingLoading] = React.useState(false);
+
+  // Sync state if recipe changes
+  React.useEffect(() => {
+    setSalesPriceInput(recipe.salesPrice || 0);
+    setTargetMargin(recipe.targetMarginPercent || 70);
+  }, [recipe]);
+
+  // Ingredients editing states
+  const [isEditingIngredients, setIsEditingIngredients] = React.useState(false);
+  const [editingIngredients, setEditingIngredients] = React.useState([]);
+  const [selectedNewItem, setSelectedNewItem] = React.useState("");
+
+  const handleStartEditIngredients = () => {
+    setEditingIngredients((recipe.ingredients || []).map(ing => ({
+      itemId: ing.itemId,
+      gross: ing.gross,
+      net: ing.net,
+      name: ing.name,
+      unitLabel: ing.unitLabel
+    })));
+    setIsEditingIngredients(true);
+  };
+
+  const handleAddIngredient = () => {
+    if (!selectedNewItem) return;
+    const item = inventoryItems.find(i => i.id === selectedNewItem);
+    if (!item) return;
+
+    // Check if already in the list
+    if (editingIngredients.some(ing => ing.itemId === item.id)) {
+      setToast("Этот ингредиент уже добавлен");
+      return;
+    }
+
+    setEditingIngredients(current => [
+      ...current,
+      {
+        itemId: item.id,
+        gross: 0.1, // default 100g
+        net: 0.08,  // default 80g
+        name: item.name,
+        unitLabel: item.unitLabel
+      }
+    ]);
+    setSelectedNewItem("");
+  };
+
+  const handleRemoveIngredient = (itemId) => {
+    setEditingIngredients(current => current.filter(ing => ing.itemId !== itemId));
+  };
+
+  const handleIngredientValueChange = (itemId, field, value) => {
+    setEditingIngredients(current => current.map(ing => {
+      if (ing.itemId === itemId) {
+        return {
+          ...ing,
+          [field]: Number(value) || 0
+        };
+      }
+      return ing;
+    }));
+  };
+
+  const handleSaveIngredients = async () => {
+    try {
+      await onUpdateRecipeIngredients(recipe.id, editingIngredients);
+      setIsEditingIngredients(false);
+    } catch (err) {
+      setToast(`Ошибка при сохранении: ${err.message}`);
+    }
+  };
+
+  const handleSaveCosting = async () => {
+    setCostingLoading(true);
+    try {
+      await onUpdateRecipeCosting(recipe.id, salesPriceInput, targetMargin);
+    } catch (err) {
+      setToast(`Ошибка: ${err.message}`);
+    } finally {
+      setCostingLoading(false);
+    }
+  };
+
+  // Math for costing
+  const foodCostNum = recipe.costNum || 0;
+  const salesPriceNum = Number(salesPriceInput) || 0;
+  
+  // Food cost % of sales price
+  const foodCostPercent = salesPriceNum > 0 ? (foodCostNum / salesPriceNum) * 100 : 0;
+  
+  // Realized margin %
+  const marginPercent = salesPriceNum > 0 ? ((salesPriceNum - foodCostNum) / salesPriceNum) * 100 : 0;
+
+  // Realized markup %
+  const markupPercent = foodCostNum > 0 ? ((salesPriceNum - foodCostNum) / foodCostNum) * 100 : 0;
+
   return (
     <Sheet onClose={onClose} title={recipe.title} eyebrow={recipe.category}>
-      <div className="mb-4 h-40 overflow-hidden rounded-3xl bg-amber-100">
+      <div className="mb-4 h-36 overflow-hidden rounded-3xl bg-amber-100">
         <img src={recipe.image} alt="" className="h-full w-full object-cover" />
       </div>
+
       <div className="grid grid-cols-3 gap-2">
         <Metric label="Время" value={recipe.time} />
         <Metric label="Выход" value={recipe.yield} />
-        <Metric label="Cost" value={recipe.cost} />
+        <Metric label="Себестоимость" value={recipe.cost} />
       </div>
-      <div className="mt-4 rounded-3xl bg-slate-50 p-4">
-        <p className="text-sm font-black text-slate-500">Шаги</p>
-        <ol className="mt-2 space-y-2">
-          {recipe.steps.map((step, index) => (
-            <li key={step} className="flex gap-2 text-sm font-bold text-slate-800">
-              <span className="text-amber-600">{index + 1}.</span>
-              {step}
-            </li>
-          ))}
-        </ol>
+
+      {/* Tabs */}
+      <div className="mt-4 flex gap-1 border-b border-slate-100 pb-2">
+        {["steps", "composition", "costing"].map(tab => (
+          <button
+            key={tab}
+            onClick={() => {
+              setRecipeTab(tab);
+              setIsEditingIngredients(false);
+            }}
+            className={`flex-1 py-2 text-center text-xs font-black rounded-xl transition-all ${
+              recipeTab === tab
+                ? "bg-slate-900 text-white shadow-sm"
+                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {tab === "steps" ? "Приготовление" : tab === "composition" ? "Состав" : "Калькуляция"}
+          </button>
+        ))}
+      </div>
+
+      {/* Steps Tab */}
+      {recipeTab === "steps" && (
+        <div className="mt-4 rounded-3xl bg-slate-50 p-4">
+          <p className="text-sm font-black text-slate-500">Шаги</p>
+          <ol className="mt-2 space-y-2">
+            {recipe.steps && recipe.steps.length > 0 ? (
+              recipe.steps.map((step, index) => (
+                <li key={step} className="flex gap-2 text-sm font-bold text-slate-800">
+                  <span className="text-amber-600 font-black">{index + 1}.</span>
+                  {step}
+                </li>
+              ))
+            ) : (
+              <p className="text-sm font-semibold text-slate-500 text-center py-4 bg-slate-50 rounded-2xl">Шаги приготовления не заполнены</p>
+            )}
+          </ol>
+        </div>
+      )}
+
+      {/* Composition (Ingredients) Tab */}
+      {recipeTab === "composition" && (
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-black text-slate-500">Ингредиенты (на {recipe.yield})</p>
+            {!isEditingIngredients && (
+              <button
+                onClick={handleStartEditIngredients}
+                className="text-xs font-black text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl transition-colors"
+              >
+                Редактировать состав
+              </button>
+            )}
+          </div>
+
+          {isEditingIngredients ? (
+            <div className="space-y-3 bg-slate-50 p-3 rounded-3xl">
+              <div className="space-y-3 max-h-[30vh] overflow-y-auto no-scrollbar">
+                {editingIngredients.map((ing, idx) => (
+                  <div key={ing.itemId} className="flex flex-col gap-2 bg-white p-3 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-black text-slate-950 truncate max-w-[80%]">{ing.name}</span>
+                      <button 
+                        onClick={() => handleRemoveIngredient(ing.itemId)}
+                        className="text-red-500 hover:text-red-700 font-bold text-xs"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase">Брутто ({ing.unitLabel})</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={ing.gross}
+                          onChange={(e) => handleIngredientValueChange(ing.itemId, "gross", e.target.value)}
+                          className="w-full h-8 px-2 font-bold text-slate-950 text-xs rounded-xl border border-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase">Нетто ({ing.unitLabel})</label>
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={ing.net}
+                          onChange={(e) => handleIngredientValueChange(ing.itemId, "net", e.target.value)}
+                          className="w-full h-8 px-2 font-bold text-slate-950 text-xs rounded-xl border border-slate-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Ingredient Selector */}
+              <div className="border-t border-slate-200 pt-3">
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Добавить ингредиент</label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedNewItem}
+                    onChange={(e) => setSelectedNewItem(e.target.value)}
+                    className="flex-1 h-9 px-2 font-bold text-xs text-slate-800 rounded-xl border border-slate-200 bg-white"
+                  >
+                    <option value="">-- Выберите продукт --</option>
+                    {inventoryItems
+                      .filter(item => !editingIngredients.some(ing => ing.itemId === item.id))
+                      .map(item => (
+                        <option key={item.id} value={item.id}>{item.name} ({item.unitLabel})</option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={handleAddIngredient}
+                    className="h-9 px-3 bg-slate-900 text-white font-black text-xs rounded-xl hover:bg-slate-800"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleSaveIngredients}
+                  className="flex-1 h-10 bg-green-600 text-white text-xs font-black rounded-xl hover:bg-green-700 shadow-sm"
+                >
+                  Сохранить состав
+                </button>
+                <button
+                  onClick={() => setIsEditingIngredients(false)}
+                  className="flex-1 h-10 bg-slate-200 text-slate-700 text-xs font-black rounded-xl hover:bg-slate-300"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex text-[10px] font-black uppercase text-slate-400 px-2">
+                <span className="flex-[2] min-w-0">Продукт</span>
+                <span className="flex-1 text-right">Брутто</span>
+                <span className="flex-1 text-right">Нетто</span>
+                <span className="flex-1 text-right">Себест.</span>
+              </div>
+              {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                recipe.ingredients.map(ing => (
+                  <div key={ing.itemId || ing.name} className="flex items-center text-sm font-bold text-slate-800 bg-slate-50 p-2.5 rounded-2xl">
+                    <span className="flex-[2] truncate pr-1">{ing.name}</span>
+                    <span className="flex-1 text-right">{ing.gross.toFixed(3)} {ing.unitLabel}</span>
+                    <span className="flex-1 text-right">{ing.net.toFixed(3)} {ing.unitLabel}</span>
+                    <span className="flex-1 text-right text-slate-900 font-extrabold">{ing.calculatedCost.toFixed(2)} EUR</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm font-semibold text-slate-500 text-center py-4 bg-slate-50 rounded-2xl">Состав не заполнен</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Costing (Margin/Markup Calc) Tab */}
+      {recipeTab === "costing" && (
+        <div className="mt-4 space-y-4">
+          <p className="text-sm font-black text-slate-500">Экономические показатели блюда</p>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-slate-50 p-3 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400">Себестоимость</p>
+              <p className="text-lg font-black text-slate-950 mt-1">{foodCostNum.toFixed(2)} EUR</p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400">Фуд-кост %</p>
+              <p className={`text-lg font-black mt-1 ${foodCostPercent > 30 ? "text-red-500 animate-pulse" : "text-green-600"}`}>
+                {foodCostPercent > 0 ? `${foodCostPercent.toFixed(1)}%` : "н/д"}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400">Маржинальность</p>
+              <p className="text-lg font-black text-slate-950 mt-1">
+                {marginPercent > 0 ? `${marginPercent.toFixed(1)}%` : "н/д"}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400">Наценка</p>
+              <p className="text-lg font-black text-slate-950 mt-1">
+                {markupPercent > 0 ? `${markupPercent.toFixed(0)}%` : "н/д"}
+              </p>
+            </div>
+          </div>
+
+          {foodCostPercent > 30 && (
+            <div className="flex gap-2 bg-red-50 border border-red-200 text-red-700 text-xs font-bold leading-relaxed p-3.5 rounded-2xl">
+              <AlertTriangle className="shrink-0 text-red-500" size={18} />
+              <span>
+                Предупреждение: Высокий фудкост блюда ({foodCostPercent.toFixed(1)}% &gt; 30%)! Рекомендуется увеличить цену продажи или сократить закладки.
+              </span>
+            </div>
+          )}
+
+          {/* Pricing settings form */}
+          <div className="space-y-3 border-t border-slate-100 pt-3">
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1">Цена продажи гостю (EUR)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={salesPriceInput}
+                onChange={(e) => setSalesPriceInput(e.target.value)}
+                className="w-full h-11 px-3 font-bold text-slate-950 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black text-slate-700 mb-1">Целевой процент маржи (%)</label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={targetMargin}
+                onChange={(e) => setTargetMargin(e.target.value)}
+                className="w-full h-11 px-3 font-bold text-slate-950 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
+              />
+            </div>
+
+            <button
+              onClick={handleSaveCosting}
+              disabled={costingLoading}
+              className="w-full h-11 bg-slate-900 text-white font-black text-xs rounded-2xl hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {costingLoading ? "Сохранение..." : "Сохранить калькуляцию"}
+            </button>
+          </div>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+function BaseScreen({ inventoryItems, onUpdateIngredientPrice }) {
+  const [query, setQuery] = React.useState("");
+  const [editingItem, setEditingItem] = React.useState(null);
+  
+  const filteredItems = inventoryItems.filter(item => 
+    item.name.toLowerCase().includes(query.toLowerCase()) ||
+    item.supplier.toLowerCase().includes(query.toLowerCase())
+  );
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-black text-slate-900">База ингредиентов</h2>
+      </div>
+      
+      <SearchBox value={query} onChange={setQuery} />
+      
+      <div className="grid gap-3 lg:grid-cols-2">
+        {filteredItems.map(item => (
+          <div key={item.id} className="flex min-h-24 w-full items-center justify-between gap-3 rounded-3xl bg-white p-4 shadow-sm">
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-black text-slate-950 truncate">{item.name}</p>
+              <div className="mt-1.5 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+                <span>Цех: {item.station}</span>
+                <span>•</span>
+                <span>Поставщик: {item.supplier}</span>
+              </div>
+              <div className="mt-2.5 flex gap-3">
+                <div className="bg-slate-50 px-3 py-1.5 rounded-2xl text-xs font-bold text-slate-700">
+                  Цена: <span className="text-slate-950 font-black">{item.costPerUnit.toFixed(2)} EUR</span> / {item.unitLabel}
+                </div>
+                <div className="bg-slate-50 px-3 py-1.5 rounded-2xl text-xs font-bold text-slate-700">
+                  Потери: <span className="text-slate-950 font-black">{(item.lossPercent * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setEditingItem(item)}
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm"
+              aria-label="Редактировать цену"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
+        ))}
+        {filteredItems.length === 0 && (
+          <div className="rounded-3xl bg-white p-6 text-center shadow-sm lg:col-span-2">
+            <Package className="mx-auto mb-3 text-slate-300" size={34} />
+            <p className="text-lg font-black text-slate-950">Ингредиенты не найдены</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">Проверь запрос поиска.</p>
+          </div>
+        )}
+      </div>
+
+      {editingItem && (
+        <IngredientEditSheet 
+          item={editingItem} 
+          onClose={() => setEditingItem(null)} 
+          onSave={(price, loss) => {
+            onUpdateIngredientPrice(editingItem.id, price, loss);
+            setEditingItem(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function IngredientEditSheet({ item, onClose, onSave }) {
+  const [price, setPrice] = React.useState(item.costPerUnit);
+  const [loss, setLoss] = React.useState(item.lossPercent * 100);
+  
+  const handleSave = () => {
+    onSave(Number(price) || 0, (Number(loss) || 0) / 100);
+  };
+  
+  return (
+    <Sheet onClose={onClose} title={`Редактирование: ${item.name}`} eyebrow="База ингредиентов">
+      <div className="space-y-4 mt-2">
+        <div>
+          <label className="block text-sm font-black text-slate-700 mb-1">Цена за единицу (EUR / {item.unitLabel})</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full h-12 px-4 font-bold text-slate-950 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-black text-slate-700 mb-1">Процент отходов/потерь при обработке (%)</label>
+          <input 
+            type="number" 
+            step="1" 
+            min="0" 
+            max="100" 
+            value={loss}
+            onChange={(e) => setLoss(e.target.value)}
+            className="w-full h-12 px-4 font-bold text-slate-950 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50"
+          />
+          <p className="mt-1 text-xs text-slate-500 font-semibold leading-relaxed">
+            Указывает процент отходов при чистке, нарезке или тепловой обработке. Например, 15% для чистки картофеля.
+          </p>
+        </div>
+        
+        <button 
+          onClick={handleSave}
+          className="w-full h-12 mt-2 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-colors shadow-sm"
+        >
+          Сохранить изменения
+        </button>
       </div>
     </Sheet>
   );
@@ -1371,6 +1974,9 @@ function QuickPanel({ activeTab, currentCook, onClose, onAction }) {
       { id: "call-sous", group: "Команда", label: "Позвать су-шефа", description: "Короткий командный сигнал", tone: "amber", event: "Позвал су-шефа в чат", meta: "Чат" },
       { id: "pin-announcement", group: "Команда", label: "Закрепить объявление", description: "Важное сообщение для всей кухни", tone: "green", event: "Закрепил объявление", meta: "Чат" },
       { id: "urgent-alert", group: "Проблема", label: "Срочное сообщение", description: "Выделить сообщение как критичное", tone: "red", event: "Отправил срочное сообщение", meta: "Чат" },
+    ],
+    base: [
+      { id: "price-update", group: "Цены", label: "Обновить цены", description: "Зафиксировать изменение цен у поставщиков", tone: "amber", event: "Обновил прайс-лист ингредиентов", meta: "База" },
     ],
   };
 
@@ -1820,6 +2426,7 @@ function Fab({ activeTab, onClick }) {
   const labels = {
     shift: "Быстрое действие смены",
     recipes: "Добавить ТТК",
+    base: "Быстрое действие базы",
     inventory: "Сигнал склада",
     stations: "Новый процесс",
     chat: "Новое сообщение",
@@ -1834,13 +2441,13 @@ function Fab({ activeTab, onClick }) {
 
 function BottomNav({ activeTab, setActiveTab }) {
   return (
-    <nav className="absolute bottom-3 left-1/2 z-10 grid w-[calc(100%-2rem)] max-w-[25rem] -translate-x-1/2 grid-cols-5 rounded-[1.75rem] border border-slate-200 bg-white/95 p-1.5 shadow-soft backdrop-blur">
+    <nav className="absolute bottom-3 left-1/2 z-10 grid w-[calc(100%-2rem)] max-w-[28rem] -translate-x-1/2 grid-cols-6 rounded-[1.75rem] border border-slate-200 bg-white/95 p-1.5 shadow-soft backdrop-blur">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
         return (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-3xl text-[11px] font-black ${active ? "bg-slate-900 text-white" : "text-slate-500"}`}>
-            <Icon size={22} strokeWidth={active ? 3 : 2.4} />
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-3xl text-[10px] font-black ${active ? "bg-slate-900 text-white" : "text-slate-500"}`}>
+            <Icon size={20} strokeWidth={active ? 3 : 2.4} />
             <span>{tab.label}</span>
           </button>
         );

@@ -73,7 +73,7 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
       .order("created_at"),
     supabase
       .from("inventory_items")
-      .select("id,name,unit_label,par_level,current_note,station_id,supplier_id,stations(name),suppliers(name)")
+      .select("id,name,unit_label,par_level,current_note,station_id,supplier_id,cost_per_unit,loss_percent,stations(name),suppliers(name)")
       .eq("restaurant_id", restaurantId)
       .order("created_at"),
     supabase
@@ -142,9 +142,23 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
         food_cost,
         allergens,
         image_url,
+        sales_price,
+        target_margin_percent,
         recipe_steps (
           body,
           sort_order
+        ),
+        recipe_ingredients (
+          id,
+          quantity_gross,
+          quantity_net,
+          inventory_items (
+            id,
+            name,
+            cost_per_unit,
+            unit_label,
+            loss_percent
+          )
         )
       `)
       .eq("restaurant_id", restaurantId),
@@ -399,6 +413,9 @@ function mapInventoryItem(item) {
     par: item.par_level ? `${item.par_level} ${item.unit_label}` : item.unit_label,
     status: getInventoryStatus(item.current_note),
     supplier: item.suppliers?.name ?? "Не назначен",
+    costPerUnit: item.cost_per_unit ? Number(item.cost_per_unit) : 0,
+    lossPercent: item.loss_percent ? Number(item.loss_percent) : 0,
+    unitLabel: item.unit_label ?? "кг"
   };
 }
 
@@ -502,16 +519,48 @@ function mapRecipe(recipe) {
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map(step => step.body);
 
+  const ingredients = (recipe.recipe_ingredients ?? []).map(ri => {
+    const item = ri.inventory_items;
+    const gross = Number(ri.quantity_gross) || 0;
+    const net = Number(ri.quantity_net) || 0;
+    const name = item?.name ?? "Неизвестный продукт";
+    const costPerUnit = item?.cost_per_unit ? Number(item.cost_per_unit) : 0;
+    const lossPercent = item?.loss_percent ? Number(item.loss_percent) : 0;
+    const unitLabel = item?.unit_label ?? "кг";
+    
+    // Cost calculation: gross * costPerUnit
+    const calculatedCost = gross * costPerUnit;
+
+    return {
+      id: ri.id,
+      itemId: item?.id,
+      name,
+      gross,
+      net,
+      costPerUnit,
+      lossPercent,
+      unitLabel,
+      calculatedCost
+    };
+  });
+
+  // Calculate dynamic food cost
+  const dynamicFoodCost = ingredients.reduce((sum, ing) => sum + ing.calculatedCost, 0);
+
   return {
     id: recipe.id,
     title: recipe.title,
     category: recipe.category,
     time: recipe.prep_time_minutes ? `${recipe.prep_time_minutes} мин` : "15 мин",
     yield: recipe.yield_label ?? "1 порция",
-    cost: recipe.food_cost ? `${Number(recipe.food_cost).toFixed(2)} EUR` : "0.00 EUR",
+    cost: dynamicFoodCost > 0 ? `${dynamicFoodCost.toFixed(2)} EUR` : (recipe.food_cost ? `${Number(recipe.food_cost).toFixed(2)} EUR` : "0.00 EUR"),
+    costNum: dynamicFoodCost > 0 ? dynamicFoodCost : (recipe.food_cost ? Number(recipe.food_cost) : 0),
     allergens: recipe.allergens ?? "нет",
     image: recipe.image_url ?? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=240&q=80",
-    steps
+    salesPrice: recipe.sales_price ? Number(recipe.sales_price) : 0,
+    targetMarginPercent: recipe.target_margin_percent ? Number(recipe.target_margin_percent) : 70,
+    steps,
+    ingredients
   };
 }
 
@@ -563,4 +612,56 @@ function mapStationGuide(station, staffList, stationProcesses, checklistTemplate
     service,
     close
   };
+}
+
+export async function updateRemoteIngredientPrice(itemId, costPerUnit, lossPercent) {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({
+      cost_per_unit: costPerUnit,
+      loss_percent: lossPercent
+    })
+    .eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function updateRemoteRecipeCosting(recipeId, salesPrice, targetMarginPercent) {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from("recipes")
+    .update({
+      sales_price: salesPrice,
+      target_margin_percent: targetMarginPercent
+    })
+    .eq("id", recipeId);
+  if (error) throw error;
+}
+
+export async function updateRemoteRecipeIngredients(recipeId, ingredientsList) {
+  if (!supabase) return;
+  
+  // First delete existing recipe ingredients for this recipe
+  const { error: deleteError } = await supabase
+    .from("recipe_ingredients")
+    .delete()
+    .eq("recipe_id", recipeId);
+    
+  if (deleteError) throw deleteError;
+  
+  if (ingredientsList.length === 0) return;
+  
+  // Insert new ingredients
+  const insertData = ingredientsList.map(ing => ({
+    recipe_id: recipeId,
+    inventory_item_id: ing.itemId,
+    quantity_gross: ing.gross,
+    quantity_net: ing.net
+  }));
+  
+  const { error: insertError } = await supabase
+    .from("recipe_ingredients")
+    .insert(insertData);
+    
+  if (insertError) throw insertError;
 }
