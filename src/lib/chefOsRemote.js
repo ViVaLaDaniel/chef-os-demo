@@ -51,7 +51,20 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     throw new Error("Chef OS workspace bootstrap did not return restaurant_id");
   }
 
-  const [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult] = await Promise.all([
+  const [
+    stationsResult,
+    tasksResult,
+    inventoryResult,
+    reportsResult,
+    activityResult,
+    messagesResult,
+    checklistRunsResult,
+    shiftsResult,
+    staffResult,
+    recipesResult,
+    processesResult,
+    templatesResult
+  ] = await Promise.all([
     supabase.from("stations").select("id,name,description,owner_label,sort_order").eq("restaurant_id", restaurantId).order("sort_order"),
     supabase
       .from("shift_tasks")
@@ -93,10 +106,72 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
           )
         )
       `)
-      .eq("shifts.restaurant_id", restaurantId)
+      .eq("shifts.restaurant_id", restaurantId),
+    supabase
+      .from("shifts")
+      .select("id,title,shift_date,peak_window,status")
+      .eq("restaurant_id", restaurantId)
+      .order("created_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("staff_contacts")
+      .select(`
+        id,
+        full_name,
+        role_label,
+        phone,
+        app_user_id,
+        station_id,
+        stations(name),
+        shift_assignments (
+          starts_at,
+          ends_at,
+          status,
+          shift_id
+        )
+      `)
+      .eq("restaurant_id", restaurantId),
+    supabase
+      .from("recipes")
+      .select(`
+        id,
+        title,
+        category,
+        yield_label,
+        prep_time_minutes,
+        food_cost,
+        allergens,
+        image_url,
+        recipe_steps (
+          body,
+          sort_order
+        )
+      `)
+      .eq("restaurant_id", restaurantId),
+    supabase
+      .from("station_processes")
+      .select("id,station_id,title,process_type,sort_order,stations!inner(restaurant_id)")
+      .eq("stations.restaurant_id", restaurantId)
+      .order("sort_order"),
+    supabase
+      .from("checklist_templates")
+      .select(`
+        id,
+        station_id,
+        title,
+        phase,
+        checklist_items (
+          title,
+          sort_order
+        )
+      `)
+      .eq("restaurant_id", restaurantId)
   ]);
 
-  const results = [stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult];
+  const results = [
+    stationsResult, tasksResult, inventoryResult, reportsResult, activityResult, messagesResult, checklistRunsResult,
+    shiftsResult, staffResult, recipesResult, processesResult, templatesResult
+  ];
   const failedResult = results.find((result) => result.error);
   if (failedResult) {
     throw failedResult.error;
@@ -145,6 +220,26 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     }
   }
 
+  const activeShiftId = shiftsResult.data?.[0]?.id || null;
+  const activeShift = shiftsResult.data?.[0] || null;
+
+  let shiftData = null;
+  if (activeShift) {
+    shiftData = {
+      title: activeShift.title ?? "Вечерняя смена",
+      date: activeShift.shift_date ?? "",
+      startsAt: "11:00",
+      endsAt: "22:00",
+      peakWindow: activeShift.peak_window ?? "18:30-21:00"
+    };
+  }
+
+  const staffList = (staffResult.data ?? []).map(contact => mapStaffMember(contact, activeShiftId));
+  const recipeList = (recipesResult.data ?? []).map(mapRecipe);
+  const stationGuideList = (stationsResult.data ?? []).map(station => 
+    mapStationGuide(station, staffList, processesResult.data ?? [], templatesResult.data ?? [])
+  );
+
   return {
     restaurantId,
     tasks: (tasksResult.data ?? []).map((task) => mapTask(task, stationsById)),
@@ -153,7 +248,11 @@ export async function bootstrapAndLoadChefOsWorkspace({ currentUserId } = {}) {
     activity: (activityResult.data ?? []).map(mapActivity),
     chatMessages: (messagesResult.data ?? []).map((message) => mapMessage(message, currentUserId)),
     generalChecklist: generalChecklist.length > 0 ? generalChecklist : null,
-    stationChecklists: Object.values(stationChecklists).some(p => Object.values(p).some(arr => arr.length > 0)) ? stationChecklists : null
+    stationChecklists: Object.values(stationChecklists).some(p => Object.values(p).some(arr => arr.length > 0)) ? stationChecklists : null,
+    staff: staffList.length > 0 ? staffList : null,
+    recipes: recipeList.length > 0 ? recipeList : null,
+    stationGuides: stationGuideList.length > 0 ? stationGuideList : null,
+    currentShift: shiftData
   };
 }
 
@@ -356,4 +455,112 @@ function formatRemoteTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function mapStaffMember(contact, activeShiftId) {
+  const assignment = (contact.shift_assignments ?? []).find(sa => sa.shift_id === activeShiftId);
+  const stationName = contact.stations?.name ?? "Склад";
+  const stationId = STATION_NAME_TO_ID[stationName] ?? "warehouse";
+  
+  let timeStr = "выходной";
+  let statusStr = "Выходной";
+  if (assignment) {
+    const start = assignment.starts_at ? assignment.starts_at.slice(0, 5) : "00:00";
+    const end = assignment.ends_at ? assignment.ends_at.slice(0, 5) : "00:00";
+    timeStr = `${start}-${end}`;
+    statusStr = assignment.status === "active" ? "На смене" : assignment.status === "expected" ? "Ожидается" : "Выходной";
+  }
+
+  const instructionsByStation = {
+    cold: "Твой фокус: тартар, салаты, холодная подача. Проверяй рыбу, соусы, аллергены и чистоту доски перед каждым блоком.",
+    hot: "Подготовить линию к 17:30, держать термощуп рядом, согласовывать отдачу с pass.",
+    prep: "Маркировать контейнеры сразу после заготовки, сигналить остатки ниже нормы, не оставлять продукт без даты.",
+    pass: "Держать pass, подтверждать стоп-лист, снимать блокеры цехов до пика.",
+    sushi: "Проверить рис, нори, соевый соус и чистый нож. Любой вопрос по рыбе сразу в pass.",
+  };
+
+  const instruction = instructionsByStation[stationId] ?? "Соблюдать ТТК и санитарные нормы.";
+
+  return {
+    id: contact.id,
+    name: contact.full_name,
+    role: contact.role_label,
+    station: stationName,
+    stationId,
+    time: timeStr,
+    status: statusStr,
+    phone: contact.phone ?? "",
+    avatar: contact.full_name ? contact.full_name.charAt(0).toUpperCase() : "?",
+    instruction,
+    appUserId: contact.app_user_id
+  };
+}
+
+function mapRecipe(recipe) {
+  const steps = (recipe.recipe_steps ?? [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map(step => step.body);
+
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    category: recipe.category,
+    time: recipe.prep_time_minutes ? `${recipe.prep_time_minutes} мин` : "15 мин",
+    yield: recipe.yield_label ?? "1 порция",
+    cost: recipe.food_cost ? `${Number(recipe.food_cost).toFixed(2)} EUR` : "0.00 EUR",
+    allergens: recipe.allergens ?? "нет",
+    image: recipe.image_url ?? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=240&q=80",
+    steps
+  };
+}
+
+function mapStationGuide(station, staffList, stationProcesses, checklistTemplates) {
+  const stationId = STATION_NAME_TO_ID[station.name] ?? "warehouse";
+  
+  const assignedCook = staffList.find(member => member.stationId === stationId && member.status === "На смене");
+  const ownerName = assignedCook ? assignedCook.name : (station.owner_label ?? "Не назначен");
+  const statusStr = assignedCook ? (stationId === "cold" ? "В работе" : "На смене") : "Ожидается";
+
+  const processes = stationProcesses.filter(sp => sp.station_id === station.id);
+  const duties = processes
+    .filter(p => p.process_type === "duty")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map(p => p.title);
+    
+  const mistakes = processes
+    .filter(p => p.process_type === "mistake")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map(p => p.title);
+
+  const templates = checklistTemplates.filter(t => t.station_id === station.id);
+  
+  const setupTemplate = templates.find(t => t.phase === "setup");
+  const setup = setupTemplate
+    ? (setupTemplate.checklist_items ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map(item => item.title)
+    : [];
+
+  const serviceTemplate = templates.find(t => t.phase === "service");
+  const service = serviceTemplate
+    ? (serviceTemplate.checklist_items ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map(item => item.title)
+    : [];
+
+  const closeTemplate = templates.find(t => t.phase === "close");
+  const close = closeTemplate
+    ? (closeTemplate.checklist_items ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map(item => item.title)
+    : [];
+
+  return {
+    id: stationId,
+    remoteId: station.id,
+    name: station.name,
+    owner: ownerName,
+    status: statusStr,
+    description: station.description ?? "",
+    duties,
+    mistakes,
+    setup,
+    service,
+    close
+  };
 }

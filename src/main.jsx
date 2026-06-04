@@ -276,6 +276,10 @@ export function App() {
   const [inventoryItems, setInventoryItems] = React.useState(initialOperationalState.inventoryItems);
   const [inventoryReports, setInventoryReports] = React.useState(initialOperationalState.inventoryReports);
   const [chatMessages, setChatMessages] = React.useState(initialOperationalState.chatMessages);
+  const [staffList, setStaffList] = React.useState(initialOperationalState.staff ?? staff);
+  const [recipesList, setRecipesList] = React.useState(initialOperationalState.recipes ?? recipes);
+  const [stationGuidesList, setStationGuidesList] = React.useState(initialOperationalState.stationGuides ?? stationGuides);
+  const [currentShiftState, setCurrentShiftState] = React.useState(initialOperationalState.currentShift ?? currentShift);
   const [cacheStatus, setCacheStatus] = React.useState({
     savedAt: initialOperationalState.savedAt,
     source: initialOperationalState.source,
@@ -300,6 +304,14 @@ export function App() {
   const isOnline = useOnlineStatus();
   const accountName = getAccountDisplayName(session);
   const accountUserId = session?.user?.id ?? null;
+
+  const currentCook = React.useMemo(() => {
+    if (session && staffList && staffList.length > 0) {
+      const match = staffList.find((member) => member.appUserId === accountUserId);
+      if (match) return match;
+    }
+    return (staffList?.[1] || staff[1]);
+  }, [session, staffList, accountUserId]);
 
   React.useEffect(() => {
     if (!supabase) return undefined;
@@ -346,6 +358,18 @@ export function App() {
         if (workspace.stationChecklists) {
           setStationChecklists(workspace.stationChecklists);
         }
+        if (workspace.staff) {
+          setStaffList(workspace.staff);
+        }
+        if (workspace.recipes) {
+          setRecipesList(workspace.recipes);
+        }
+        if (workspace.stationGuides) {
+          setStationGuidesList(workspace.stationGuides);
+        }
+        if (workspace.currentShift) {
+          setCurrentShiftState(workspace.currentShift);
+        }
       } catch (error) {
         if (isCancelled) {
           return;
@@ -372,12 +396,16 @@ export function App() {
       inventoryReports,
       activity,
       chatMessages,
+      staff: staffList,
+      recipes: recipesList,
+      stationGuides: stationGuidesList,
+      currentShift: currentShiftState
     });
 
     if (savedAt) {
       setCacheStatus({ savedAt, source: "cache" });
     }
-  }, [activity, chatMessages, generalChecklist, inventoryItems, inventoryReports, stationChecklists, tasks]);
+  }, [activity, chatMessages, generalChecklist, inventoryItems, inventoryReports, stationChecklists, tasks, staffList, recipesList, stationGuidesList, currentShiftState]);
 
   async function handleGoogleSignIn() {
     if (!isSupabaseConfigured) {
@@ -489,6 +517,26 @@ export function App() {
       } else {
         setStationChecklists(initialStationChecklists);
       }
+      if (workspace.staff) {
+        setStaffList(workspace.staff);
+      } else {
+        setStaffList(staff);
+      }
+      if (workspace.recipes) {
+        setRecipesList(workspace.recipes);
+      } else {
+        setRecipesList(recipes);
+      }
+      if (workspace.stationGuides) {
+        setStationGuidesList(workspace.stationGuides);
+      } else {
+        setStationGuidesList(stationGuides);
+      }
+      if (workspace.currentShift) {
+        setCurrentShiftState(workspace.currentShift);
+      } else {
+        setCurrentShiftState(currentShift);
+      }
       setToast("Demo workspace очищен");
     } catch (error) {
       setToast(`Reset не выполнен: ${error.message}`);
@@ -562,7 +610,7 @@ export function App() {
   }
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipes : recipes.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
+  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
     `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
   );
 
@@ -577,8 +625,8 @@ export function App() {
   return (
     <main className="min-h-screen overflow-x-hidden px-3 py-3 text-slate-900 sm:px-6">
       <section className="relative mx-auto flex h-[calc(100dvh-24px)] w-full max-w-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-slate-50 shadow-soft sm:max-w-md lg:max-w-5xl">
-        <StatusBar />
-        <AppHeader title={screenTitle} activeTab={activeTab} onMenu={() => setTopMenuOpen(true)} />
+        <StatusBar currentShift={currentShiftState} />
+        <AppHeader title={screenTitle} activeTab={activeTab} currentCook={currentCook} currentShift={currentShiftState} onMenu={() => setTopMenuOpen(true)} />
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-2 lg:px-6">
           <AuthStatus session={session} loading={authLoading} isOnline={isOnline} cacheStatus={cacheStatus} remoteWorkspace={remoteWorkspace} onSignIn={handleGoogleSignIn} onSignOut={handleSignOut} />
           {activeTab === "shift" && (
@@ -586,6 +634,9 @@ export function App() {
               tasks={tasks}
               generalChecklist={generalChecklist}
               stationChecklists={stationChecklists}
+              currentCook={currentCook}
+              stationGuides={stationGuidesList}
+              currentShift={currentShiftState}
               onToggleTask={toggleTask}
               toggleGeneralChecklist={toggleGeneralChecklist}
               activity={activity}
@@ -607,7 +658,14 @@ export function App() {
             />
           )}
           {activeTab === "inventory" && <InventoryScreen inventoryItems={inventoryItems} reports={inventoryReports} onReport={reportInventory} onConfirm={confirmInventoryReport} />}
-          {activeTab === "stations" && <StationsScreen stationChecklists={stationChecklists} setSelectedStation={setSelectedStation} />}
+          {activeTab === "stations" && (
+            <StationsScreen
+              stationChecklists={stationChecklists}
+              currentCook={currentCook}
+              stationGuides={stationGuidesList}
+              setSelectedStation={setSelectedStation}
+            />
+          )}
           {activeTab === "chat" && <Chat messages={chatMessages} onSendMessage={sendChatMessage} />}
         </div>
         {toast && <Toast message={toast} onClose={() => setToast("")} />}
@@ -636,7 +694,7 @@ export function App() {
             }}
           />
         )}
-        {profileOpen && <ProfileSheet cook={currentCook} onClose={() => setProfileOpen(false)} setSelectedStation={setSelectedStation} />}
+        {profileOpen && <ProfileSheet cook={currentCook} stationGuides={stationGuidesList} onClose={() => setProfileOpen(false)} setSelectedStation={setSelectedStation} />}
         {notificationsOpen && <NotificationsSheet activity={activity} onClose={() => setNotificationsOpen(false)} />}
         {scheduleOpen && (
           <ScheduleSheet
@@ -649,10 +707,10 @@ export function App() {
         )}
         {settingsOpen && <SettingsSheet remoteWorkspace={remoteWorkspace} resetLoading={resetLoading} onResetDemo={resetDemoWorkspace} onClose={() => setSettingsOpen(false)} />}
         {selectedStop && <StopSheet item={selectedStop} onClose={() => setSelectedStop(null)} />}
-        {staffOpen && <StaffSheet onClose={() => setStaffOpen(false)} setToast={setToast} />}
+        {staffOpen && <StaffSheet staff={staffList} onClose={() => setStaffOpen(false)} setToast={setToast} />}
         {selectedRecipe && <RecipeSheet recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
         {selectedStation && <StationSheet station={selectedStation} checklist={stationChecklists[selectedStation.id]} onToggleChecklist={toggleStationChecklist} onClose={() => setSelectedStation(null)} />}
-        {quickPanelOpen && <QuickPanel activeTab={activeTab} onClose={() => setQuickPanelOpen(false)} onAction={handleQuickAction} />}
+        {quickPanelOpen && <QuickPanel activeTab={activeTab} currentCook={currentCook} onClose={() => setQuickPanelOpen(false)} onAction={handleQuickAction} />}
         <Fab activeTab={activeTab} onClick={() => setQuickPanelOpen(true)} />
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </section>
@@ -714,7 +772,7 @@ function AccountAvatar({ userLabel, avatarUrl }) {
   );
 }
 
-function StatusBar() {
+function StatusBar({ currentShift }) {
   const now = useNow();
   const remaining = getShiftRemaining(now, currentShift.endsAt);
 
@@ -734,7 +792,7 @@ function StatusBar() {
   );
 }
 
-function AppHeader({ title, activeTab, onMenu }) {
+function AppHeader({ title, activeTab, currentCook, currentShift, onMenu }) {
   const now = useNow();
 
   return (
@@ -756,7 +814,7 @@ function AppHeader({ title, activeTab, onMenu }) {
   );
 }
 
-function ShiftScreen({ tasks, generalChecklist, stationChecklists, onToggleTask, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
+function ShiftScreen({ tasks, generalChecklist, stationChecklists, currentCook, stationGuides, currentShift, onToggleTask, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
   const openTasks = tasks.filter((task) => !task.done).length;
 
   return (
@@ -929,7 +987,7 @@ function InventoryScreen({ inventoryItems, reports, onReport, onConfirm }) {
   );
 }
 
-function StationsScreen({ stationChecklists, setSelectedStation }) {
+function StationsScreen({ stationChecklists, currentCook, stationGuides, setSelectedStation }) {
   const myStation = stationGuides.find((station) => station.id === currentCook.stationId);
   const myProgress = getStationProgress(stationChecklists[currentCook.stationId]);
 
@@ -1059,11 +1117,11 @@ function Chat({ messages: chatMessages, onSendMessage }) {
   );
 }
 
-function StaffSheet({ onClose, setToast }) {
+function StaffSheet({ staff: staffList, onClose, setToast }) {
   return (
     <Sheet onClose={onClose} title="Люди на смене">
       <div className="space-y-3">
-        {staff.map((person) => (
+        {staffList.map((person) => (
           <article key={person.id} className="flex min-h-20 items-center gap-3 rounded-3xl bg-slate-50 p-3">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">{person.avatar}</div>
             <div className="min-w-0 flex-1">
@@ -1173,7 +1231,7 @@ function SettingsSheet({ remoteWorkspace, resetLoading, onResetDemo, onClose }) 
   );
 }
 
-function ProfileSheet({ cook, onClose, setSelectedStation }) {
+function ProfileSheet({ cook, stationGuides, onClose, setSelectedStation }) {
   const station = stationGuides.find((item) => item.id === cook.stationId);
 
   return (
@@ -1284,8 +1342,39 @@ function StationSheet({ station, checklist, onToggleChecklist, onClose }) {
   );
 }
 
-function QuickPanel({ activeTab, onClose, onAction }) {
-  const actions = quickActionCatalog[activeTab];
+function QuickPanel({ activeTab, currentCook, onClose, onAction }) {
+  const actionsCatalog = {
+    shift: [
+      { id: "need-sous", group: "Проблема", label: "Нужен су-шеф", description: "Позвать ответственного к станции", tone: "amber", event: "Позвал су-шефа", meta: currentCook.station },
+      { id: "late-ticket", group: "Проблема", label: "Задержка отдачи", description: "Сообщить pass, что блюдо задерживается", tone: "red", event: "Сообщил задержку отдачи", meta: currentCook.station },
+      { id: "station-task", group: "Смена", label: "Задача на мой цех", description: "Добавить срочную задачу в mise en place", tone: "amber", event: "Создал задачу на цех", meta: currentCook.station },
+      { id: "open-checklist", group: "Чек-лист", label: "Открыть мой чек-лист", description: "Перейти к процессам моей станции", tone: "green", event: "Открыл чек-лист станции", meta: currentCook.station },
+      { id: "stop-item", group: "Стоп", label: "Поставить блюдо в стоп", description: "Сигнал для pass/су-шефа на подтверждение", tone: "red", event: "Создал стоп-сигнал", meta: "Pass" },
+    ],
+    recipes: [
+      { id: "recipe-issue", group: "ТТК", label: "Ошибка в рецепте", description: "Сообщить шефу о неточности", tone: "amber", event: "Сообщил ошибку в ТТК", meta: "ТТК" },
+      { id: "photo-standard", group: "ТТК", label: "Фото эталона", description: "Добавить или запросить фото подачи", tone: "green", event: "Запросил фото эталона", meta: "ТТК" },
+      { id: "missing-ingredient", group: "Проблема", label: "Нет ингредиента", description: "Связать ТТК со складовым сигналом", tone: "red", event: "Сообщил: нет ингредиента для ТТК", meta: currentCook.station },
+    ],
+    inventory: [
+      { id: "empty-stock", group: "Склад", label: "Продукт закончился", description: "Критичный сигнал су-шефу", tone: "red", event: "Складовой сигнал: продукт закончился", meta: currentCook.station },
+      { id: "one-left", group: "Склад", label: "Осталась 1 единица", description: "Предупредить до полного нуля", tone: "amber", event: "Складовой сигнал: осталась 1 единица", meta: currentCook.station },
+      { id: "confirm-order", group: "Закупка", label: "Подтвердить заявку", description: "Су-шеф подтверждает сигнал", tone: "green", event: "Подтвердил складовую заявку", meta: "Склад" },
+      { id: "photo-shelf", group: "Фото", label: "Фото полки", description: "Прикрепить визуальное подтверждение", tone: "amber", event: "Добавил фото складской проблемы", meta: "Склад" },
+    ],
+    stations: [
+      { id: "open-process", group: "Процесс", label: "Открыть процесс", description: "Посмотреть инструкции станции", tone: "green", event: "Открыл процесс станции", meta: currentCook.station },
+      { id: "process-blocker", group: "Проблема", label: "Блокер процесса", description: "Сообщить, что станция не может продолжить", tone: "red", event: "Сообщил блокер процесса", meta: currentCook.station },
+      { id: "handover-note", group: "Закрытие", label: "Заметка на передачу", description: "Оставить handover для следующей смены", tone: "amber", event: "Добавил заметку на передачу", meta: currentCook.station },
+    ],
+    chat: [
+      { id: "call-sous", group: "Команда", label: "Позвать су-шефа", description: "Короткий командный сигнал", tone: "amber", event: "Позвал су-шефа в чат", meta: "Чат" },
+      { id: "pin-announcement", group: "Команда", label: "Закрепить объявление", description: "Важное сообщение для всей кухни", tone: "green", event: "Закрепил объявление", meta: "Чат" },
+      { id: "urgent-alert", group: "Проблема", label: "Срочное сообщение", description: "Выделить сообщение как критичное", tone: "red", event: "Отправил срочное сообщение", meta: "Чат" },
+    ],
+  };
+
+  const actions = actionsCatalog[activeTab];
   const groupedActions = actions.reduce((groups, action) => {
     return {
       ...groups,
@@ -1536,6 +1625,10 @@ function readOperationalCache() {
       inventoryReports: Array.isArray(data.inventoryReports) ? data.inventoryReports : seed.inventoryReports,
       activity: Array.isArray(data.activity) ? data.activity : seed.activity,
       chatMessages: Array.isArray(data.chatMessages) ? data.chatMessages : seed.chatMessages,
+      staff: Array.isArray(data.staff) ? data.staff : seed.staff,
+      recipes: Array.isArray(data.recipes) ? data.recipes : seed.recipes,
+      stationGuides: Array.isArray(data.stationGuides) ? data.stationGuides : seed.stationGuides,
+      currentShift: data.currentShift && typeof data.currentShift === "object" ? data.currentShift : seed.currentShift,
       savedAt: typeof parsedCache.savedAt === "string" ? parsedCache.savedAt : null,
       source: "cache",
     };
@@ -1554,10 +1647,6 @@ function writeOperationalCache(snapshot) {
         version: OPERATIONAL_CACHE_VERSION,
         savedAt,
         data: {
-          currentShift,
-          staff,
-          recipes,
-          stationGuides,
           ...snapshot,
         },
       })
