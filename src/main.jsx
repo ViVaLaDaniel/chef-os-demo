@@ -1107,10 +1107,11 @@ function Chat({ messages: chatMessages, onSendMessage }) {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 rounded-3xl bg-white p-2 shadow-sm">
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => event.key === "Enter" && sendMessage()} className="h-12 min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none placeholder:text-slate-400" placeholder="Сообщение кухне..." />
+      <div className="flex items-center gap-2 rounded-3xl bg-white p-2 shadow-sm focus-within:ring-2 focus-within:ring-amber-500 transition-shadow">
+        <label htmlFor="chat-input" className="sr-only">Сообщение кухне</label>
+        <input id="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => event.key === "Enter" && sendMessage()} className="h-12 min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none placeholder:text-slate-400" placeholder="Сообщение кухне..." />
         <button onClick={sendMessage} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white disabled:bg-slate-200" aria-label="Отправить" disabled={!draft.trim()}>
-          <Send size={22} />
+          <Send size={22} aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -1490,9 +1491,10 @@ function StationChecklistBlock({ title, stationId, phase, items, onToggle }) {
 
 function SearchBox({ value, onChange }) {
   return (
-    <label className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm">
-      <Search className="text-slate-400" size={22} />
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-slate-400" placeholder="Блюдо, аллерген, цех..." />
+    <label htmlFor="search-input" className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm focus-within:ring-2 focus-within:ring-amber-500 transition-shadow">
+      <span className="sr-only">Поиск</span>
+      <Search className="text-slate-400" size={22} aria-hidden="true" />
+      <input id="search-input" value={value} onChange={(event) => onChange(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-slate-400" placeholder="Блюдо, аллерген, цех..." />
     </label>
   );
 }
