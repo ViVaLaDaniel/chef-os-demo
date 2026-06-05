@@ -609,10 +609,15 @@ export function App() {
     }
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+  // ⚡ Bolt: Optimize recipe filtering
+  // Why: Prevents expensive string manipulations (toLowerCase) and array filtering (O(n)) on every App re-render (e.g. when typing chat message or ticking checklist item)
+  // Impact: Reduces CPU time during unrelated state updates, eliminating unnecessary recalculations.
+  const filteredRecipes = React.useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [query, recipeFilter, recipesList]);
 
   const screenTitle = {
     shift: "Смена сейчас",
