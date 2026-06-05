@@ -1,0 +1,3 @@
+## 2023-10-27 - Custom Styled Inputs Lacking Focus Indicators
+**Learning:** When native inputs are unstyled (`outline-none`, `bg-transparent`) inside customized wrappers (like padded label or div containers), they often lose focus indicators entirely. This hides keyboard focus and creates an accessibility issue because users don't know which field is active.
+**Action:** Use Tailwind's `focus-within:ring-X` utility on the wrapper container. This applies the focus style to the entire component when the hidden inner input is focused, maintaining both the visual design and keyboard accessibility. Always remember to add `sr-only` labels if the wrapper only uses icons.
