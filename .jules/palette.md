@@ -1,0 +1,3 @@
+## 2025-02-28 - Custom Inputs Focus States
+**Learning:** In highly customized, monolithic React architectures (like this Chef OS Demo), developers often disable the default browser focus ring on `<input>` elements using utilities like `outline-none` inside a wrapping container. This removes crucial accessibility cues for keyboard navigation.
+**Action:** When inspecting such custom inputs, always check the parent container (e.g., `div` or `label`) and add `focus-within:ring-*` classes to visually indicate focus. In this project, `focus-within:ring-2 focus-within:ring-amber-500` matches the design system perfectly.
