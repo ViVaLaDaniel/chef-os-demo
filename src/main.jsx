@@ -1834,12 +1834,12 @@ function Fab({ activeTab, onClick }) {
 
 function BottomNav({ activeTab, setActiveTab }) {
   return (
-    <nav className="absolute bottom-3 left-1/2 z-10 grid w-[calc(100%-2rem)] max-w-[25rem] -translate-x-1/2 grid-cols-5 rounded-[1.75rem] border border-slate-200 bg-white/95 p-1.5 shadow-soft backdrop-blur">
+    <nav role="tablist" aria-label="Основная навигация" className="absolute bottom-3 left-1/2 z-10 grid w-[calc(100%-2rem)] max-w-[25rem] -translate-x-1/2 grid-cols-5 rounded-[1.75rem] border border-slate-200 bg-white/95 p-1.5 shadow-soft backdrop-blur">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
         return (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-3xl text-[11px] font-black ${active ? "bg-slate-900 text-white" : "text-slate-500"}`}>
+          <button key={tab.id} role="tab" aria-selected={active} onClick={() => setActiveTab(tab.id)} className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-3xl text-[11px] font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${active ? "bg-slate-900 text-white" : "text-slate-500"}`}>
             <Icon size={22} strokeWidth={active ? 3 : 2.4} />
             <span>{tab.label}</span>
           </button>
