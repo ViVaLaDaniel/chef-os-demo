@@ -1,0 +1,3 @@
+## 2025-03-08 - Restoring Focus States for outline-none Inputs
+**Learning:** When using `outline-none` on standard inputs inside custom container wrappers (like a stylized `div` or `label`), keyboard users lose the visual indicator of focus. Simply removing the outline breaks accessibility.
+**Action:** Use Tailwind's `focus-within` on the parent container (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to highlight the entire custom input area when the inner input receives focus. Always pair icon-only buttons with proper `aria-label`s and use `aria-hidden="true"` on the icons themselves to avoid redundant screen reader announcements.
