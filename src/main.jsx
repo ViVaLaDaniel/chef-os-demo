@@ -610,9 +610,12 @@ export function App() {
   }
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+  // ⚡ Bolt: Memoize filtered recipes to prevent O(N) recalculations on every re-render (e.g. typing in chat or timer tick)
+  const filteredRecipes = React.useMemo(() => {
+    return (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [recipeFilter, recipesList, normalizedQuery]);
 
   const screenTitle = {
     shift: "Смена сейчас",
@@ -815,7 +818,8 @@ function AppHeader({ title, activeTab, currentCook, currentShift, onMenu }) {
 }
 
 function ShiftScreen({ tasks, generalChecklist, stationChecklists, currentCook, stationGuides, currentShift, onToggleTask, toggleGeneralChecklist, activity, addActivity, setStaffOpen, setSelectedStop, setSelectedStation, setToast }) {
-  const openTasks = tasks.filter((task) => !task.done).length;
+  // ⚡ Bolt: Memoize open tasks count to avoid filtering the array on unrelated state changes
+  const openTasks = React.useMemo(() => tasks.filter((task) => !task.done).length, [tasks]);
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
