@@ -1,0 +1,4 @@
+
+## 2026-06-03 - Restoring keyboard accessibility for icon-only outline-none inputs
+**Learning:** In this project, there is a recurring pattern of search and chat input fields using `outline-none` on the `<input>` element itself to hide default browser styling in favor of custom wrapper styling. This completely removes the focus indicator for keyboard users, causing accessibility issues. Additionally, these inputs often rely purely on placeholder text and icons without explicit labels.
+**Action:** When working on inputs with `outline-none`, always check if the parent container handles the focus state (e.g. using `focus-within:ring-2 focus-within:ring-amber-500`). Furthermore, for icon-only inputs, always add `aria-label` to provide accessible context to screen readers, especially since placeholders aren't accessible labels.
