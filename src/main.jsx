@@ -609,10 +609,13 @@ export function App() {
     }
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+  // ⚡ Bolt: Memoize filtered recipes to prevent unnecessary recalculations on every render (e.g. from timer ticks)
+  const filteredRecipes = React.useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [recipeFilter, recipesList, query]);
 
   const screenTitle = {
     shift: "Смена сейчас",
