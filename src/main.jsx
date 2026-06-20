@@ -610,9 +610,14 @@ export function App() {
   }
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+
+  // ⚡ Bolt: Memoized recipe filtering to prevent expensive string/array operations
+  // on every render, especially since App re-renders often on tab or toast changes.
+  const filteredRecipes = React.useMemo(() => {
+    return (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [recipeFilter, recipesList, normalizedQuery]);
 
   const screenTitle = {
     shift: "Смена сейчас",
