@@ -1,0 +1,3 @@
+## 2024-05-15 - Restoring focus states for hidden input outlines
+**Learning:** When using Tailwind's `outline-none` on inputs to hide default browser focus rings (often done for aesthetic reasons inside styled containers), it causes an accessibility issue because keyboard users lose visual feedback on focus.
+**Action:** Always add a fallback visual focus state on the input's parent container using `focus-within:ring-2 focus-within:ring-inset focus-within:ring-[color]` to restore keyboard accessibility while maintaining the intended design. Ensure the input also has an `aria-label` or associated label if no visible label is present.
