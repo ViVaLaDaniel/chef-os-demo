@@ -1,0 +1,3 @@
+## 2025-06-21 - Restoring Focus States for outline-none Inputs
+**Learning:** In Tailwind CSS, when using `outline-none` on `<input>` elements (often for a seamless, borderless design within a parent container), the visual keyboard focus indication is lost. Attempting to add focus classes back to the input often fails to style the parent container correctly, breaking the visual grouping.
+**Action:** Always apply `focus-within:ring-2` (and offset/color classes) to the **wrapping container** (like `<label>` or `<div>`) rather than the input itself. This ensures the entire component visually responds to keyboard focus, maintaining accessibility without compromising the borderless input aesthetic.
