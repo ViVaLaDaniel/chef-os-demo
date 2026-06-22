@@ -1,0 +1,3 @@
+## 2024-05-18 - Restoring keyboard accessibility for custom input wrappers
+**Learning:** In the codebase, when `outline-none` is applied to `<input>` tags for visual styling within custom wrappers (like search boxes or chat inputs), it breaks keyboard accessibility because the focus indicator is lost. Applying focus styles directly to the input doesn't work well visually when it's part of a composite component.
+**Action:** Use the `focus-within` Tailwind modifier on the parent wrapper element (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to restore a visible focus state for keyboard navigation while maintaining the custom design.
