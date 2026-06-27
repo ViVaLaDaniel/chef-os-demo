@@ -1,0 +1,3 @@
+## 2025-02-24 - Input Accessibility and Focus States in Monolithic UI
+**Learning:** Found that custom-styled search and chat inputs wrapped in rounded `div` or `label` tags with `outline-none` on the actual `<input>` element resulted in zero keyboard focus indication. Furthermore, the inputs lacked text labels for screen readers.
+**Action:** When encountering custom-styled inputs lacking focus rings (often due to `outline-none`), apply `focus-within:ring-2 focus-within:ring-[color]` to the parent wrapper rather than the input itself. Additionally, always ensure a visually hidden `<span className="sr-only">` or `<label className="sr-only">` is present inside the wrapper for screen reader context.
