@@ -609,10 +609,21 @@ export function App() {
     }
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+  // Memoize filtered recipes to avoid expensive string operations on every render
+  const filteredRecipes = React.useMemo(() => {
+    let filtered = recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter);
+
+    const normalizedQuery = query.trim().toLowerCase();
+
+    // Fast path: if no search query, return the category-filtered list directly
+    if (!normalizedQuery) {
+      return filtered;
+    }
+
+    return filtered.filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [recipeFilter, recipesList, query]);
 
   const screenTitle = {
     shift: "Смена сейчас",
