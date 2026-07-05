@@ -1,0 +1,3 @@
+## 2024-01-24 - Restoring Focus States for Container-Based Inputs
+**Learning:** The application uses custom UI containers with `outline-none` on nested `<input>` elements (like `SearchBox` and `Chat` input). This completely removes keyboard focus visibility since the input itself has no outline and its wrapper provides no visual feedback.
+**Action:** When an input has `outline-none` to let its container handle styling, the parent container *must* include `focus-within:ring-2 focus-within:ring-amber-500` (or similar) to ensure keyboard navigation remains accessible and intuitive. Also, if the container doesn't have an explicit label, use `<span className="sr-only">` or `aria-label` to provide screen reader context.
