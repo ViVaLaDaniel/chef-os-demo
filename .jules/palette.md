@@ -1,0 +1,3 @@
+## 2024-07-06 - Input Outline/Accessibility Fix
+**Learning:** `outline-none` class is heavily used in inputs inside `src/main.jsx`, removing the default accessibility focus ring for keyboard users, and screen readers are completely missing labels for the message/search boxes since they lacked `aria-label`s.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` (matching the app's `amber-500` primary active color) to parent containers of `outline-none` inputs. Also provide context-specific Russian `aria-label` translations or `<span className="sr-only">` tags for visual icons used as descriptive elements to aid accessibility.
