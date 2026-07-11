@@ -1,0 +1,3 @@
+## 2024-07-11 - Accessible Unstyled Inputs
+**Learning:** When using `outline-none` on inputs inside stylized wrapper components (like a `div` or `label`), keyboard users lose focus visibility. Additionally, inputs often lack accessible names when placeholder text serves as the visual label.
+**Action:** Always add `focus-within:ring-2 focus-within:ring-amber-500` (or the respective primary color) to the wrapper component and ensure the input itself has an `aria-label` or an associated `<label>` (or `.sr-only` text) so both screen readers and keyboard users get the expected context and feedback.
