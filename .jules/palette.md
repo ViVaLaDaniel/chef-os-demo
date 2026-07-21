@@ -1,0 +1,3 @@
+## 2024-07-21 - Restore Focus Visibility on `outline-none` Inputs
+**Learning:** Text inputs inside styled container wrappers (like rounded rectangles or labels with icons) often use `outline-none` to prevent the browser's default focus ring from breaking the wrapper's visual design. This completely breaks keyboard accessibility by making the focused state invisible.
+**Action:** When using `outline-none` on an input inside a wrapper, always apply `focus-within:ring-2 focus-within:ring-[primary-color]` to the parent container to restore accessible focus indication. Also ensure the input itself has an `aria-label` or is implicitly labeled.
