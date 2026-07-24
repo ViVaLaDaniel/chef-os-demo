@@ -1,0 +1,3 @@
+## 2024-07-24 - Restoring Keyboard Focus Visibility on `outline-none` Inputs
+**Learning:** In Tailwind CSS, developers often remove native focus outlines from `<input>` fields using `outline-none` to match custom design systems. However, this destroys keyboard accessibility (focus state visibility) unless replaced. If the custom focus ring belongs on a parent wrapper element (like a stylized container or label with an icon), it cannot use `focus` or `focus-visible`.
+**Action:** Use `focus-within:ring-2 focus-within:ring-amber-500` (or similar active colors) on the wrapper element to simulate a focus outline that properly triggers when the inner `outline-none` input receives focus.
