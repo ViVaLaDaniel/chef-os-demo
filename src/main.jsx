@@ -609,10 +609,23 @@ export function App() {
     }
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+  // ⚡ Bolt Optimization: Memoize filteredRecipes calculation to prevent expensive string
+  // concatenations and .toLowerCase() calls on every component re-render (which happens frequently
+  // due to the global shift timer and typing).
+  const filteredRecipes = React.useMemo(() => {
+    const baseList = recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter);
+    const normalizedQuery = query.trim().toLowerCase();
+
+    // ⚡ Bolt Optimization: Fast-path early return when search is empty to skip building combined
+    // search strings for every recipe. This drastically improves performance during initial load.
+    if (!normalizedQuery) {
+      return baseList;
+    }
+
+    return baseList.filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [query, recipeFilter, recipesList]);
 
   const screenTitle = {
     shift: "Смена сейчас",
