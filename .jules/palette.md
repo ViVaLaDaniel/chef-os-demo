@@ -1,0 +1,3 @@
+## 2024-07-25 - Restoring Keyboard Focus Indicators on Inputs using `outline-none`
+**Learning:** In composite components (like a search bar with a search icon and input field, or a chat input field with a send button), removing the default browser outline (`outline-none`) creates a significant accessibility issue for keyboard users navigating via Tab, as there is no visual indicator when the input receives focus.
+**Action:** Always provide alternative focus indicators using the `focus-within` pseudoclass on the parent wrapping element (e.g. `focus-within:ring-2 focus-within:ring-amber-500`), which ensures a visible focus state that encompasses both the input and adjacent icons.
