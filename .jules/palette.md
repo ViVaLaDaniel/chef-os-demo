@@ -1,0 +1,3 @@
+## 2024-07-28 - Restore Focus States for `outline-none` Elements
+**Learning:** When using `outline-none` on standard inputs nested inside stylized container elements (like rounded divs or labels with icons), the inputs lose their native focus ring. Furthermore, inputs that only contain placeholder text or a nearby visual icon lack context for screen readers.
+**Action:** Always add `focus-within:ring-2 focus-within:ring-amber-500` (or the equivalent primary focus style) to the *container* element when using `outline-none` on the input inside. Additionally, provide `sr-only` text or `aria-label` attributes on the input or its wrapping label for screen reader accessibility.
