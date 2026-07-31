@@ -1,0 +1,3 @@
+## 2024-05-18 - Restoring Focus Accessibility with `outline-none`
+**Learning:** When using Tailwind's `outline-none` on `<input>` fields (e.g., to hide the default browser outline and style the input block to look cleaner), keyboard users lose focus visibility, leading to severe accessibility issues.
+**Action:** Always restore focus visibility by adding a focus ring to the parent container using `focus-within:ring-2 focus-within:ring-amber-500` (if the parent wraps an icon and input) or directly to the input via `focus-visible:ring-2 focus-visible:ring-amber-500`. The color should follow the app's active state color (`amber-500`).
