@@ -1,0 +1,3 @@
+## 2024-08-02 - Restore Focus States for outline-none Inputs
+**Learning:** When using Tailwind's `outline-none` on `<input>` elements (which removes default browser focus rings) inside a styled parent container, keyboard navigators lose critical visual feedback. Adding `aria-label` is not enough.
+**Action:** Use `focus-within:ring-2 focus-within:ring-[primary-color]` on the parent container (e.g., `<div className="... focus-within:ring-2 focus-within:ring-amber-500">`) so the entire visual input area highlights when the inner `<input>` receives focus. Also ensure all inputs without visible text labels have a descriptive `aria-label`.
