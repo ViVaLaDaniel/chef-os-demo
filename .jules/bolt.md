@@ -1,3 +1,6 @@
 ## 2026-06-04 - Large component architecture issue
 **Learning:** Monolithic files like `src/main.jsx` (~1800 lines) slow down feature additions and lead to state fatigue.
 **Action:** When adding big UI elements next time, modularize early and push for splitting components into separate files instead of maintaining the monolith.
+## 2026-06-04 - Recipe filtering optimization in main component
+**Learning:** In highly monolithic frontend architectures like this project where `src/main.jsx` contains the root `App` component and many UI screens, frequent state updates (like typing in the search bar or global shift timers updating every minute) trigger re-renders of the entire file. Derived data like `filteredRecipes`, which involved expensive string interpolations and `.toLowerCase()` operations over an entire list on *every* render (even when no search text was entered), was causing performance bottlenecks.
+**Action:** When filtering lists in the root component, always prioritize memoization (like `React.useMemo`) for derived data—especially when it involves heavy loop-based string manipulations—and implement fast-path early returns (e.g. `if (!query) return baseList`) to prevent expensive recalculations when they aren't needed.
