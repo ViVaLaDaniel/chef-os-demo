@@ -743,7 +743,7 @@ function AuthStatus({ session, loading, isOnline, cacheStatus, remoteWorkspace, 
       <button
         onClick={session ? onSignOut : onSignIn}
         disabled={loading}
-        className="min-h-12 shrink-0 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300"
+        className="min-h-12 shrink-0 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
       >
         {loading ? "..." : session ? "Выйти" : "Google"}
       </button>
@@ -1107,7 +1107,7 @@ function Chat({ messages: chatMessages, onSendMessage }) {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 rounded-3xl bg-white p-2 shadow-sm">
+      <div className="flex items-center gap-2 rounded-3xl bg-white p-2 shadow-sm focus-within:ring-2 focus-within:ring-amber-500">
         <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => event.key === "Enter" && sendMessage()} className="h-12 min-w-0 flex-1 bg-transparent px-3 font-semibold outline-none placeholder:text-slate-400" placeholder="Сообщение кухне..." />
         <button onClick={sendMessage} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white disabled:bg-slate-200" aria-label="Отправить" disabled={!draft.trim()}>
           <Send size={22} />
@@ -1221,7 +1221,7 @@ function SettingsSheet({ remoteWorkspace, resetLoading, onResetDemo, onClose }) 
         <button
           onClick={onResetDemo}
           disabled={!canResetDemo}
-          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300"
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
         >
           <RotateCcw size={18} />
           {resetLoading ? "Очищаю demo..." : "Очистить demo данные"}
@@ -1490,7 +1490,7 @@ function StationChecklistBlock({ title, stationId, phase, items, onToggle }) {
 
 function SearchBox({ value, onChange }) {
   return (
-    <label className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm">
+    <label className="flex h-14 items-center gap-3 rounded-3xl bg-white px-4 shadow-sm focus-within:ring-2 focus-within:ring-amber-500">
       <Search className="text-slate-400" size={22} />
       <input value={value} onChange={(event) => onChange(event.target.value)} className="h-full min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-slate-400" placeholder="Блюдо, аллерген, цех..." />
     </label>
