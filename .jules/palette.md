@@ -1,0 +1,3 @@
+## 2024-08-04 - Restoring Focus Indicators for outline-none Elements
+**Learning:** When using `outline-none` on an `input` to visually style it within a wrapper container (like a search box or chat input), keyboard focus indicators are completely lost, making it inaccessible for keyboard users. Additionally, placeholder text is not a sufficient accessible name for screen readers.
+**Action:** Always add `focus-within:ring-2 focus-within:ring-amber-500` (or the appropriate focus ring styling) to the wrapper element of an `outline-none` input to restore focus visibility. Also, always add a descriptive `aria-label` to the `input` itself when there is no explicit `<label>` tag with text.
