@@ -1,0 +1,3 @@
+## 2024-08-07 - Restore focus visibility for inputs with outline-none
+**Learning:** When native focus styles (`outline-none`) are stripped from `<input>` fields (e.g. to fit cleanly within a custom visual container), users relying on keyboard navigation lose all indication of focus. Additionally, inputs visually wrapped in containers without explicit `<label>` elements often lack semantic context for screen readers.
+**Action:** Always restore focus visibility on the parent wrapper using `focus-within:ring-2 focus-within:ring-amber-500` (or similar app-specific focus ring classes) to maintain visual keyboard accessibility. Simultaneously, ensure all inputs lacking a valid `<label>` have explicitly set `aria-label` attributes.
