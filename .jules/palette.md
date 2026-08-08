@@ -1,0 +1,3 @@
+## 2025-03-09 - Restoring Focus States with outline-none
+**Learning:** In Tailwind CSS, using `outline-none` on inputs removes default browser focus indicators, which negatively impacts keyboard accessibility. Inputs that lack clear focus states fail WCAG compliance (Success Criterion 2.4.7 Focus Visible).
+**Action:** When applying `outline-none` to inputs to remove default styling, always restore focus visibility by adding `focus-within:ring-2 focus-within:ring-amber-500` (using the project's primary active state color) to the input's wrapper element, and ensure screen reader support is maintained using `aria-label` or `<span className="sr-only">`.
