@@ -1,0 +1,3 @@
+## 2024-05-14 - Keyboard accessibility with outline-none
+**Learning:** When using Tailwind's `outline-none` on form inputs (which removes the default browser focus ring), the interface becomes completely inaccessible for keyboard users as they cannot see which element has focus.
+**Action:** Always restore focus states. A visually pleasing and accessible way to do this when inputs are wrapped in custom containers (like a rounded search box) is to apply `focus-within:ring-2 focus-within:ring-[theme-color]` to the parent wrapper element, ensuring the entire component shows focus when the internal input is active.
