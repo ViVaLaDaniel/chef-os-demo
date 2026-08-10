@@ -1,0 +1,3 @@
+## 2025-02-12 - Handling Focus with outline-none Inputs in Wrappers
+**Learning:** When custom input designs use a wrapper element (like a styled `div` or `label`) and inner `<input className="outline-none" />` to remove native focus outlines, keyboard navigation becomes invisible to users because the inner element receives focus but has no outline, and the outer wrapper doesn't know about the focus.
+**Action:** When building these input compositions, always apply `focus-within:ring-2 focus-within:ring-[theme-color]` to the outer wrapper container so that when the invisible inner input receives focus, the wrapper visibly highlights, restoring keyboard accessibility.
