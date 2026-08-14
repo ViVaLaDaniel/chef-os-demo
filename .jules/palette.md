@@ -1,0 +1,3 @@
+## 2024-05-17 - Composite Input Focus Rings
+**Learning:** When building composite input components (like a search bar with an icon inside a styling wrapper), if the inner `<input>` element uses `outline-none` to hide the default browser focus ring, keyboard users lose visible focus indication. This violates accessibility guidelines.
+**Action:** Always apply `focus-within` styles (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapping container (like the `div` or `label`) so that the custom focus ring is visible when the inner input receives focus. Also ensure the inner input has an appropriate `aria-label` if it lacks a visible `<label>`.
