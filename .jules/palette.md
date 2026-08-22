@@ -1,0 +1,3 @@
+## 2024-05-18 - Restoring Focus Accessibility in Composite Input Components
+**Learning:** In Tailwind UI, when outer wrapper elements (like `div` or `label`) encapsulate an inner `<input>` that uses `outline-none` (to remove default browser focus rings and create custom input designs with icons), keyboard navigation accessibility is broken because users can no longer see when the input is focused.
+**Action:** When resolving accessibility issues for composite input components where an inner `<input>` uses `outline-none`, apply `focus-within` classes (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper container so the focus ring is visible when the inner input receives focus.
