@@ -1,0 +1,3 @@
+## 2024-08-28 - Composite Input Focus States
+**Learning:** When inputs use `outline-none` for styling purposes within composite components (like a search box with an icon or a chat input with a send button), the focus state is lost. Applying `focus-within:ring-2 focus-within:ring-amber-500` to the wrapper container restores accessibility and visual feedback when the inner input is focused.
+**Action:** Always check wrapper containers of composite inputs that use `outline-none` on the inner `<input>` and apply `focus-within` styles to the wrapper to ensure keyboard accessibility and focus visibility.
