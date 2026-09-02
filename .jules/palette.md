@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility improvements for composite inputs
+**Learning:** For composite inputs (like search boxes or chat inputs containing icons alongside an `<input>`), applying `outline-none` to the `<input>` removes the native focus ring, negatively impacting keyboard accessibility. The visual container needs the focus styling instead. Furthermore, inputs relying only on `placeholder` text need explicit `aria-label` attributes for screen readers.
+**Action:** When creating composite input components, apply `focus-within:ring-2 focus-within:ring-[color]` classes to the wrapper element (e.g. `<label>` or `<div>`), and always ensure the inner `<input>` has an `aria-label` if it lacks a visible `<label>`.
