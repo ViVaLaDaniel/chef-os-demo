@@ -1,0 +1,3 @@
+## 2023-10-27 - Composite Input Accessibility
+**Learning:** When creating composite input fields where a wrapper element is styled like the input and the actual `<input>` uses `outline-none` (which hides native focus rings), keyboard users lose focus visibility.
+**Action:** Always apply `focus-within` styles (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper container so the focus ring is visible when the inner input is active. Additionally, provide explicit `aria-label` attributes to the inner `<input>` if it relies solely on `placeholder` text or lacks an associated `<label>`.
