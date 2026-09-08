@@ -1,0 +1,3 @@
+## 2024-06-25 - Focus rings on composite input components
+**Learning:** When styling complex input fields composed of an outer container (like `label` or `div`) and an inner `input` (which often has `outline-none` for a seamless look), the standard `focus-visible` on the input element doesn't provide visual feedback for the entire container.
+**Action:** Always apply `focus-within` utility classes (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper element to ensure the focus ring visually encapsulates the entire composite component when the inner input receives focus. Ensure inner inputs also have explicit `aria-label` attributes if relying primarily on placeholder text.
