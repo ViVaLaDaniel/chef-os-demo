@@ -1,0 +1,3 @@
+## 2024-12-09 - Focus State for Outline-None Inputs
+**Learning:** In composite components (like a search bar or chat input) where the inner `<input>` element uses `outline-none` to suppress the native browser focus ring, the component becomes inaccessible to keyboard users because they cannot see when the input is focused.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` (or the appropriate theme color) to the parent wrapper element (e.g., the `<label>` or `<div>` container) so the entire composite element displays a clear visual focus indicator when the inner input receives focus.
