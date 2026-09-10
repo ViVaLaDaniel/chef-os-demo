@@ -1,0 +1,3 @@
+## 2024-09-10 - Focus-within & ARIA labels for composite inputs
+**Learning:** For accessibility on composite inputs (like a wrapping label/div containing an icon and an input with `outline-none`), the standard `focus` class on the input is invisible, and screen readers fail to describe inputs without visible labels.
+**Action:** Apply `focus-within:ring-2 focus-within:ring-amber-500` to the wrapping container to ensure focus rings are visible when the inner input is active. Always add an explicit `aria-label` to the inner `<input>` if it lacks an associated visible text label (e.g., relies solely on placeholder text).
