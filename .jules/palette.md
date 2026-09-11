@@ -1,0 +1,3 @@
+## 2023-09-11 - Accessibility for Composite Inputs
+**Learning:** When inner `<input>` elements use `outline-none` and rely on a parent container for visual bounding (like in the `SearchBox` or Chat input components), focus visibility is lost, breaking keyboard accessibility. Relying solely on `placeholder` text without an `aria-label` or explicit `<label>` also hurts screen reader usability.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` (or the primary app color) to the outer wrapper container so the focus ring is visible when the inner input is active. Ensure the inner `<input>` has an explicit `aria-label`.
