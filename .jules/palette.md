@@ -1,0 +1,3 @@
+## 2024-03-24 - Accessibility for Composite Inputs
+**Learning:** In React/Tailwind applications, composite components (like a search box or chat input) often use a parent container with an inner `<input>` that has `outline-none` and relies purely on placeholder text for visual context. This hides the browser's default focus outline and lacks screen reader context.
+**Action:** When an inner `<input>` uses `outline-none`, apply `focus-within` styling (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to its parent container (like `div` or `label`) so the focus state is clearly visible. Additionally, ensure the inner `<input>` receives an explicit `aria-label` attribute if it lacks a visually associated `<label>` tag.
