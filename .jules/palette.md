@@ -1,0 +1,3 @@
+## 2024-05-24 - Focus states and labels on composite inputs
+**Learning:** In composite input components (like Search or Chat inputs) where the inner `<input>` uses `outline-none`, applying `focus-within` classes to the outer container ensures the focus ring is properly visible when navigating via keyboard. Additionally, inner inputs that only rely on `placeholder` text for context require explicit `aria-label` attributes for screen readers.
+**Action:** Always verify that input wrappers have `focus-within:ring-2 focus-within:ring-amber-500` (or similar focus classes) and that inner inputs have `aria-label` when `outline-none` is used.
