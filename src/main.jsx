@@ -610,9 +610,18 @@ export function App() {
   }
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredRecipes = (recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter)).filter((recipe) =>
-    `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
-  );
+
+  // ⚡ Bolt: Memoized derived recipe filtering state. In this monolithic App component, state updates (like shift timers or chat messages)
+  // trigger frequent re-renders. By adding React.useMemo and an early return for empty queries, we avoid expensive .toLowerCase() and
+  // string concatenation operations across all recipe items on every irrelevant render pass.
+  const filteredRecipes = React.useMemo(() => {
+    const byCategory = recipeFilter === "Все" ? recipesList : recipesList.filter((recipe) => recipe.category === recipeFilter);
+    if (!normalizedQuery) return byCategory;
+
+    return byCategory.filter((recipe) =>
+      `${recipe.title} ${recipe.category} ${recipe.allergens}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [normalizedQuery, recipeFilter, recipesList]);
 
   const screenTitle = {
     shift: "Смена сейчас",
