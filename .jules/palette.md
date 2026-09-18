@@ -1,0 +1,4 @@
+
+## 2023-10-25 - Focus Visible Rings on Composite Inputs with Outline None
+**Learning:** When using composite UI patterns where an inner `<input>` element hides its default outline using `outline-none` (to blend into a stylized container like a rounded white block with a search icon), keyboard users lose focus visibility. Standard `focus:ring` on the input doesn't work well because it doesn't wrap the whole composite component.
+**Action:** Apply `focus-within:ring-2 focus-within:ring-amber-500` (or similar active color) to the *outer wrapper container* (like the `div` or `label`) so the focus ring encompasses the entire component when the inner input is active. Also, ensure the inner input has an explicit `aria-label` since it often relies solely on placeholder text or lacks a visually associated separate `<label>`.
