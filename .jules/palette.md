@@ -1,0 +1,3 @@
+## 2024-05-23 - Focus States on Composite Inputs
+**Learning:** When building composite input components (like a search box with an icon where the inner `<input>` uses `outline-none`), applying `focus-visible` or focus ring classes directly to the inner input ruins the design or gets clipped. The accessible pattern is to apply `focus-within:ring-2 focus-within:ring-amber-500` to the outer wrapper (`<label>` or `<div>`). Also, icon-only or placeholder-only inputs must still have an explicit `aria-label` for screen readers.
+**Action:** Always check the outer container of an `outline-none` input and ensure it uses `focus-within` to indicate keyboard focus clearly. Add `aria-label` if there is no visible `<label>`.
