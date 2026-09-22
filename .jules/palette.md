@@ -1,0 +1,4 @@
+
+## 2023-10-24 - Accessibility and Focus States for Outline-none Inputs
+**Learning:** When creating composite input components where the inner `<input>` uses `outline-none` (to blend into a stylized container like a search box or chat input), native keyboard focus outlines are lost. This makes the UI completely inaccessible for keyboard users who rely on visual indicators to know which element is currently active. Furthermore, if the input lacks an explicit `<label>`, screen readers may only rely on placeholders, which is insufficient.
+**Action:** Always apply `focus-within` styling (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper container so the visual focus ring is correctly displayed when the inner input is active. Additionally, ensure the inner `<input>` has a descriptive `aria-label` attribute to provide proper context to screen readers.
