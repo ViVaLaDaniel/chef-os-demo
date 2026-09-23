@@ -1,0 +1,3 @@
+## 2023-10-24 - Composite Input Accessibility
+**Learning:** When an inner `<input>` uses `outline-none` for styling purposes within a composite component (like a custom search bar or chat input), it loses native focus visibility. Screen readers might also lack context if the input only uses a placeholder.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` to the outer wrapper container so the focus ring remains visible when the inner input is active. Ensure the inner `<input>` has an explicit `aria-label` if it relies solely on placeholder text or lacks an associated label.
