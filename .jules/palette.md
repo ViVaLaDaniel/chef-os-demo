@@ -1,0 +1,3 @@
+## 2024-09-26 - Composite Input Accessibility with `focus-within`
+**Learning:** When creating composite input components (like a search box with an icon or a chat input with an inline send button), where the inner `<input>` uses `outline-none` to hide its default focus ring, the component loses obvious keyboard focus visibility.
+**Action:** Apply `focus-within` utility classes (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper container (like the `div` or `label`) so the focus ring is visible when the inner input is active. Ensure the inner `<input>` has an explicit `aria-label` if it relies solely on `placeholder` text or lacks a visually associated `<label>`.
