@@ -1,0 +1,3 @@
+## 2024-05-15 - Improving Accessibility on outline-none Inputs
+**Learning:** When using composite inputs (e.g., wrapper containers with an inner `<input>` styled with `outline-none`), users navigating via keyboard lose focus visibility if the outer wrapper isn't styled to show focus. Additionally, input fields lacking visible labels and relying on placeholders are inaccessible to screen readers without ARIA labels.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` to the outer container when using `outline-none` on the inner input, and explicitly add `aria-label` to the `<input>`.
