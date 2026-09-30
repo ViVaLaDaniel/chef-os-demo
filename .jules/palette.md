@@ -1,0 +1,3 @@
+## 2024-03-24 - Accessibility focus states for composite inputs
+**Learning:** In composite input components (like SearchBox or Chat) where an inner `<input>` uses `outline-none` and is wrapped in a container styling, screen reader users might not know the input's purpose without a visually associated label, and keyboard users might lack a clear focus ring.
+**Action:** Apply `focus-within:ring-2 focus-within:ring-amber-500` to the outer wrapper container so the focus ring is visible when the inner input is active. Ensure the inner `<input>` has an explicit `aria-label` (e.g., `aria-label="Поиск"`) if it relies solely on `placeholder` text or lacks a visually associated `<label>`.
