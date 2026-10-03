@@ -1,0 +1,6 @@
+# Chef OS project-local Codex configuration for the ECC trial.
+# Based on ECC's project-local Codex pattern, kept intentionally minimal.
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "live"
