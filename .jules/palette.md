@@ -1,0 +1,3 @@
+## 2023-10-24 - Accessibility for outline-none inputs
+**Learning:** For composite input components where the inner `<input>` uses `outline-none` (to remove default browser focus outlines), keyboard users lose visual focus indicators.
+**Action:** Apply `focus-within:ring-2 focus-within:ring-[color]` classes to the outer wrapper container (e.g. the wrapping `label` or `div`) so the focus ring is properly visible when the inner input receives focus. Additionally, ensure the inner `<input>` has an explicit `aria-label` if it relies solely on `placeholder` text or lacks a visually associated `<label>`.
