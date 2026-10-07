@@ -1,0 +1,3 @@
+## 2025-02-28 - Composite Input Focus Rings
+**Learning:** In this application, custom inputs are frequently built using a container `div` or `label` with an inner `input` that has `outline-none` applied to it. This completely hides the default browser focus ring, breaking keyboard accessibility.
+**Action:** Always apply `focus-within:ring-2 focus-within:ring-amber-500` to the outer wrapper container instead of the inner input. This correctly restores visual focus state whenever the user tabs into the input. Additionally, ensure the inner `<input>` has an `aria-label` if it lacks a dedicated visually associated label (such as in the Chat input).
