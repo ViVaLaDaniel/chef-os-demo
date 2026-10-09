@@ -1,0 +1,3 @@
+## 2023-10-24 - Accessibility and Focus Rings for outline-none inputs
+**Learning:** When resolving accessibility issues for composite input components where an inner `<input>` uses `outline-none`, apply `focus-within` classes (e.g., `focus-within:ring-2 focus-within:ring-amber-500`) to the outer wrapper container (like the `div` or `label`) so the focus ring is visible when the inner input is active. Furthermore, ensure the inner `<input>` has an explicit `aria-label` if it relies solely on `placeholder` text or lacks a visually associated `<label>`.
+**Action:** Always check inputs with `outline-none` to ensure their wrapper has `focus-within` styling and they possess an `aria-label` or visually associated `<label>`.
