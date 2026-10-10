@@ -1,0 +1,3 @@
+## 2024-05-15 - Focus Visibility on Custom Inputs
+**Learning:** When using `outline-none` on inner `<input>` elements within composite components (like a search box with an icon, or a chat input with a send button), the native focus ring is lost. Applying `focus-within:ring-2 focus-within:ring-amber-500` to the outer wrapper container restores keyboard accessibility and focus visibility. Additionally, inputs lacking a visual label need explicit `aria-label` attributes.
+**Action:** Always check inputs styled with `outline-none`. Apply `focus-within` to their container and ensure they have an `aria-label` if not explicitly labeled with an `<label>` tag.
