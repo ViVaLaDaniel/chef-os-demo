@@ -1,0 +1,3 @@
+## 2024-12-16 - Add Focus States and ARIA labels to composite inputs
+**Learning:** For composite input components where an inner `<input>` uses `outline-none`, the outer wrapper container needs `focus-within` classes (like `focus-within:ring-2 focus-within:ring-amber-500`) applied so the focus ring is visible when the inner input is active. Additionally, inner inputs lacking visual labels need explicit `aria-label` attributes for accessibility.
+**Action:** When creating or modifying inputs with `outline-none`, always check the wrapper div/label for `focus-within` styling and verify the input has an `aria-label` if it relies solely on `placeholder` text.
