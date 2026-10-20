@@ -1,0 +1,3 @@
+## 2025-02-28 - Composite Input Focus Ring Accessibility
+**Learning:** When using `outline-none` on an `<input>` element to style a composite wrapper (like a custom search box or chat input), the default browser focus ring is lost. Applying `focus-within:ring-2 focus-within:ring-amber-500` to the wrapper container restores visibility for keyboard users. Additionally, inputs lacking a visible `<label>` must have an explicit `aria-label` even if placeholder text exists.
+**Action:** Always add `focus-within` styles to the wrapper and `aria-label` to the inner `<input>` when building composite input components with `outline-none`.
